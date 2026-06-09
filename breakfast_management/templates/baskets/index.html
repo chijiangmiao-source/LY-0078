@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html xmlns:py="http://genshi.edgewall.org/" py:extends="'master.html'">
+<py:block name="title">餐篮管理 - 民宿早餐备餐与配送管理系统</py:block>
+<py:block name="content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-0"><i class="bi bi-basket me-2 text-primary"></i>餐篮管理</h3>
+            <small class="text-muted">管理早餐配送餐篮</small>
+        </div>
+        <a href="/baskets/new" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i>新增餐篮
+        </a>
+    </div>
+
+    <div class="card p-3 mb-4">
+        <form method="GET" action="/baskets" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label small text-muted">关键词</label>
+                <input type="text" name="keyword" class="form-control" placeholder="餐篮编号/备注" value="${filters.get('keyword', '')}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted">状态</label>
+                <select name="status" class="form-select">
+                    <option value="">全部</option>
+                    <option value="available" ${'selected' if filters.get('status') == 'available' else ''}>可用</option>
+                    <option value="in_use" ${'selected' if filters.get('status') == 'in_use' else ''}>使用中</option>
+                    <option value="cleaning" ${'selected' if filters.get('status') == 'cleaning' else ''}>清洗中</option>
+                    <option value="disabled" ${'selected' if filters.get('status') == 'disabled' else ''}>停用</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted">厨房</label>
+                <select name="kitchen" class="form-select">
+                    <option value="">全部</option>
+                    <option value="kitchen_a" ${'selected' if filters.get('kitchen') == 'kitchen_a' else ''}>A厨房</option>
+                    <option value="kitchen_b" ${'selected' if filters.get('kitchen') == 'kitchen_b' else ''}>B厨房</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted">套餐类型</label>
+                <select name="package_type_id" class="form-select">
+                    <option value="">全部</option>
+                    <option py:for="p in packages" value="${p.id}" ${'selected' if filters.get('package_type_id') == str(p.id) else ''}>${p.name}</option>
+                </select>
+            </div>
+            <div class="col-md-1">
+                <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search"></i></button>
+            </div>
+            <div class="col-md-1">
+                <a href="/baskets" class="btn btn-outline-secondary w-100">重置</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="card">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>餐篮编号</th>
+                    <th>套餐类型</th>
+                    <th>所属厨房</th>
+                    <th>当前状态</th>
+                    <th>最近清洗日期</th>
+                    <th>备注</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr py:if="not baskets">
+                    <td colspan="7" class="text-center text-muted py-4">
+                        <i class="bi bi-inbox fs-1 d-block mb-2"></i>暂无数据
+                    </td>
+                </tr>
+                <tr py:for="b in baskets">
+                    <td class="fw-bold">${b.basket_code}</td>
+                    <td>${b.package_type.name if b.package_type else '-'}</td>
+                    <td>
+                        <py:choose>
+                            <py:when test="b.kitchen == 'kitchen_a'">A厨房</py:when>
+                            <py:when test="b.kitchen == 'kitchen_b'">B厨房</py:when>
+                        </py:choose>
+                    </td>
+                    <td>
+                        <py:choose>
+                            <py:when test="b.status == 'available'"><span class="badge bg-success">可用</span></py:when>
+                            <py:when test="b.status == 'in_use'"><span class="badge bg-primary">使用中</span></py:when>
+                            <py:when test="b.status == 'cleaning'"><span class="badge bg-warning text-dark">清洗中</span></py:when>
+                            <py:when test="b.status == 'disabled'"><span class="badge bg-danger">停用</span></py:when>
+                        </py:choose>
+                    </td>
+                    <td>${b.last_clean_date.strftime('%Y-%m-%d')}</td>
+                    <td class="text-muted small">${b.notes or '-'}</td>
+                    <td>
+                        <a href="/baskets/${b.id}/edit" class="btn btn-sm btn-outline-primary me-1">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <a href="/baskets/${b.id}/delete" class="btn btn-sm btn-outline-danger"
+                           onclick="return confirm('确定停用该餐篮吗？')">
+                            <i class="bi bi-trash"></i>
+                        </a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</py:block>
+</html>

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html xmlns:py="http://genshi.edgewall.org/" py:extends="'master.html'">
+<py:block name="title">${'编辑' if room else '新增'}房间 - 民宿早餐备餐与配送管理系统</py:block>
+<py:block name="content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-0">
+                <i class="bi bi-door-open me-2 text-primary"></i>
+                ${'编辑房间' if room else '新增房间'}
+            </h3>
+            <small class="text-muted">
+                <a href="/rooms" class="text-decoration-none">&larr; 返回房间列表</a>
+            </small>
+        </div>
+    </div>
+
+    <div class="card p-4">
+        <form method="POST" action="${f'/rooms/{room.id}/update' if room else '/rooms/create'}">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">房间号 <span class="text-danger">*</span></label>
+                    <input type="text" name="room_number" class="form-control" required
+                           value="${room.room_number if room else ''}" placeholder="如：101, 202A">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">房间类型</label>
+                    <select name="room_type" class="form-select">
+                        <option value="single" ${'selected' if room and room.room_type == 'single' else ''}>单人间</option>
+                        <option value="double" ${'selected' if (not room) or room.room_type == 'double' else ''}>双人间</option>
+                        <option value="suite" ${'selected' if room and room.room_type == 'suite' else ''}>套房</option>
+                        <option value="family" ${'selected' if room and room.room_type == 'family' else ''}>家庭房</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">楼层</label>
+                    <input type="number" name="floor" class="form-control" min="1"
+                           value="${room.floor if room else 1}">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">状态</label>
+                    <select name="status" class="form-select">
+                        <option value="vacant" ${'selected' if (not room) or room.status == 'vacant' else ''}>空闲</option>
+                        <option value="occupied" ${'selected' if room and room.status == 'occupied' else ''}>已入住</option>
+                        <option value="maintenance" ${'selected' if room and room.status == 'maintenance' else ''}>维护中</option>
+                    </select>
+                </div>
+                <div class="col-md-12">
+                    <label class="form-label">备注</label>
+                    <textarea name="notes" class="form-control" rows="3" placeholder="可选">${room.notes if room else ''}</textarea>
+                </div>
+            </div>
+            <div class="mt-4">
+                <button type="submit" class="btn btn-primary me-2">
+                    <i class="bi bi-check-lg me-1"></i>${'保存修改' if room else '创建房间'}
+                </button>
+                <a href="/rooms" class="btn btn-outline-secondary">取消</a>
+            </div>
+        </form>
+    </div>
+</py:block>
+</html>

@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html xmlns:py="http://genshi.edgewall.org/" py:extends="'master.html'">
+<py:block name="title">首页统计 - 民宿早餐备餐与配送管理系统</py:block>
+<py:block name="content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-0"><i class="bi bi-speedometer2 me-2 text-primary"></i>首页统计</h3>
+            <small class="text-muted">${today.strftime('%Y年%m月%d日')} 数据概览</small>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card stat-card blue p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-1 text-white text-opacity-75">占用房间</h6>
+                        <h2 class="fw-bold mb-0">${occupied_rooms} / ${total_rooms}</h2>
+                    </div>
+                    <i class="bi bi-door-open fs-1 text-white text-opacity-50"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card stat-card green p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-1 text-white text-opacity-75">可用餐篮</h6>
+                        <h2 class="fw-bold mb-0">${active_baskets} / ${total_baskets}</h2>
+                    </div>
+                    <i class="bi bi-basket fs-1 text-white text-opacity-50"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card stat-card orange p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-1 text-white text-opacity-75">今日配送</h6>
+                        <h2 class="fw-bold mb-0">${pending_count + delivering_count + delivered_count + returned_count}</h2>
+                    </div>
+                    <i class="bi bi-truck fs-1 text-white text-opacity-50"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card stat-card purple p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-1 text-white text-opacity-75">已退回</h6>
+                        <h2 class="fw-bold mb-0">${returned_count}</h2>
+                    </div>
+                    <i class="bi bi-arrow-return-left fs-1 text-white text-opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card p-4">
+                <h5 class="fw-bold mb-3"><i class="bi bi-clock me-2 text-primary"></i>时段配送量</h5>
+                <div class="d-flex flex-column gap-3">
+                    <div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="fw-medium">早段 (6:00-7:00)</span>
+                            <span class="badge bg-primary rounded-pill">${slot_counts.get('early', 0)} 单</span>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-primary" style="width: ${(slot_counts.get('early', 0) * 100 / max(1, sum(slot_counts.values())))}%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="fw-medium">中段 (7:00-8:00)</span>
+                            <span class="badge bg-success rounded-pill">${slot_counts.get('morning', 0)} 单</span>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-success" style="width: ${(slot_counts.get('morning', 0) * 100 / max(1, sum(slot_counts.values())))}%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="fw-medium">晚段 (8:00-9:00)</span>
+                            <span class="badge bg-warning rounded-pill text-dark">${slot_counts.get('late', 0)} 单</span>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-warning" style="width: ${(slot_counts.get('late', 0) * 100 / max(1, sum(slot_counts.values())))}%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 mb-4">
+            <div class="card p-4">
+                <h5 class="fw-bold mb-3"><i class="bi bi-pie-chart me-2 text-primary"></i>套餐类型分布</h5>
+                <py:if test="package_stats">
+                    <div class="d-flex flex-column gap-2">
+                        <div py:for="pkg_name, cnt in sorted(package_stats.items(), key=lambda x: -x[1])"
+                             class="d-flex justify-content-between align-items-center p-2 rounded"
+                             style="background: #f8f9fa;">
+                            <span class="fw-medium">${pkg_name}</span>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-info rounded-pill">${cnt} 份</span>
+                                <small class="text-muted">
+                                    ${round(cnt * 100 / sum(package_stats.values()), 1)}%
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </py:if>
+                <py:if test="not package_stats">
+                    <div class="text-center text-muted py-4">
+                        <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                        <small>暂无配送数据</small>
+                    </div>
+                </py:if>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card p-4">
+                <h5 class="fw-bold mb-3"><i class="bi bi-list-check me-2 text-primary"></i>今日配送状态</h5>
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <div class="p-3 rounded bg-light">
+                            <h4 class="fw-bold text-secondary mb-1">${pending_count}</h4>
+                            <small class="text-muted">待配送</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="p-3 rounded bg-light">
+                            <h4 class="fw-bold text-primary mb-1">${delivering_count}</h4>
+                            <small class="text-muted">配送中</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="p-3 rounded bg-light">
+                            <h4 class="fw-bold text-success mb-1">${delivered_count}</h4>
+                            <small class="text-muted">已送达</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="p-3 rounded bg-light">
+                            <h4 class="fw-bold text-info mb-1">${returned_count}</h4>
+                            <small class="text-muted">已退回</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</py:block>
+</html>

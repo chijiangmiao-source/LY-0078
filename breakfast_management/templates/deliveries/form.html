@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html xmlns:py="http://genshi.edgewall.org/" py:extends="'master.html'">
+<py:block name="title">新建配送 - 民宿早餐备餐与配送管理系统</py:block>
+<py:block name="content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-0">
+                <i class="bi bi-truck me-2 text-primary"></i>新建配送
+            </h3>
+            <small class="text-muted"><a href="/deliveries" class="text-decoration-none">&larr; 返回列表</a></small>
+        </div>
+    </div>
+
+    <div class="card p-4">
+        <div class="alert alert-info mb-4">
+            <i class="bi bi-info-circle me-2"></i>
+            <strong>约束提示：</strong>同一房间同一时段不能重复配送；餐篮状态需为使用中且未被其他未完成配送占用。
+        </div>
+        <form method="POST" action="/deliveries/create">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">配送日期</label>
+                    <input type="date" name="delivery_date" class="form-control" value="${today.isoformat()}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">配送时段 <span class="text-danger">*</span></label>
+                    <select name="time_slot" class="form-select" required>
+                        <option value="">请选择时段</option>
+                        <option value="early">早段 (6:00-7:00)</option>
+                        <option value="morning">中段 (7:00-8:00)</option>
+                        <option value="late">晚段 (8:00-9:00)</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">房间 <span class="text-danger">*</span></label>
+                    <select name="room_id" class="form-select" required>
+                        <option value="">请选择房间</option>
+                        <option py:for="r in rooms" value="${r.id}">
+                            ${r.room_number}
+                        </option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">住客</label>
+                    <select name="guest_id" class="form-select">
+                        <option value="">不指定</option>
+                        <option py:for="g in guests" value="${g.id}">
+                            ${g.name} (${g.room.room_number if g.room else ''})
+                        </option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">餐篮 <span class="text-danger">*</span></label>
+                    <select name="basket_id" class="form-select" required>
+                        <option value="">请选择已装配餐篮</option>
+                        <option py:for="b in baskets" value="${b.id}">
+                            ${b.basket_code}
+                            <py:if test="b.package_type">
+                                 - ${b.package_type.name}
+                            </py:if>
+                        </option>
+                    </select>
+                    <small class="text-muted">仅显示已装配、未配送的餐篮</small>
+                </div>
+                <div class="col-md-12">
+                    <label class="form-label">备注</label>
+                    <textarea name="notes" class="form-control" rows="2"></textarea>
+                </div>
+            </div>
+            <div class="mt-4">
+                <button type="submit" class="btn btn-primary me-2">
+                    <i class="bi bi-check-lg me-1"></i>创建配送单
+                </button>
+                <a href="/deliveries" class="btn btn-outline-secondary">取消</a>
+            </div>
+        </form>
+    </div>
+</py:block>
+</html>

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html xmlns:py="http://genshi.edgewall.org/" py:extends="'master.html'">
+<py:block name="title">${'编辑' if schedule else '新增'}备餐排期 - 民宿早餐备餐与配送管理系统</py:block>
+<py:block name="content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-0">
+                <i class="bi bi-calendar-check me-2 text-primary"></i>
+                ${'编辑排期' if schedule else '新增排期'}
+            </h3>
+            <small class="text-muted"><a href="/schedules" class="text-decoration-none">&larr; 返回列表</a></small>
+        </div>
+    </div>
+
+    <div class="card p-4">
+        <form method="POST" action="${f'/schedules/{schedule.id}/update' if schedule else '/schedules/create'}">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">备餐日期 <span class="text-danger">*</span></label>
+                    <input type="date" name="schedule_date" class="form-control" required
+                           value="${schedule.schedule_date.isoformat() if schedule else ''}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">配送时段 <span class="text-danger">*</span></label>
+                    <select name="time_slot" class="form-select" required>
+                        <option value="">请选择时段</option>
+                        <option value="early" ${'selected' if schedule and schedule.time_slot == 'early' else ''}>早段 (6:00-7:00)</option>
+                        <option value="morning" ${'selected' if schedule and schedule.time_slot == 'morning' else ''}>中段 (7:00-8:00)</option>
+                        <option value="late" ${'selected' if schedule and schedule.time_slot == 'late' else ''}>晚段 (8:00-9:00)</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">套餐类型 <span class="text-danger">*</span></label>
+                    <select name="package_type_id" class="form-select" required>
+                        <option value="">请选择套餐</option>
+                        <option py:for="p in packages" value="${p.id}"
+                                ${'selected' if schedule and schedule.package_typeID == p.id else ''}>
+                            ${p.code} - ${p.name}
+                        </option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">备餐数量 (份)</label>
+                    <input type="number" name="quantity" class="form-control" min="1"
+                           value="${schedule.quantity if schedule else 1}">
+                </div>
+                <div class="col-md-12">
+                    <label class="form-label">备注</label>
+                    <textarea name="notes" class="form-control" rows="2">${schedule.notes if schedule else ''}</textarea>
+                </div>
+            </div>
+            <div class="mt-4">
+                <button type="submit" class="btn btn-primary me-2">
+                    <i class="bi bi-check-lg me-1"></i>${'保存修改' if schedule else '创建排期'}
+                </button>
+                <a href="/schedules" class="btn btn-outline-secondary">取消</a>
+            </div>
+        </form>
+    </div>
+</py:block>
+</html>

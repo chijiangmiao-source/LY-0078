@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html xmlns:py="http://genshi.edgewall.org/" py:extends="'master.html'">
+<py:block name="title">${'编辑' if basket else '新增'}餐篮 - 民宿早餐备餐与配送管理系统</py:block>
+<py:block name="content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-0">
+                <i class="bi bi-basket me-2 text-primary"></i>
+                ${'编辑餐篮' if basket else '新增餐篮'}
+            </h3>
+            <small class="text-muted"><a href="/baskets" class="text-decoration-none">&larr; 返回列表</a></small>
+        </div>
+    </div>
+
+    <div class="card p-4">
+        <form method="POST" action="${f'/baskets/{basket.id}/update' if basket else '/baskets/create'}">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">餐篮编号 <span class="text-danger">*</span> <small class="text-muted">(不能重复)</small></label>
+                    <input type="text" name="basket_code" class="form-control" required
+                           value="${basket.basket_code if basket else ''}" placeholder="如：B001">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">所属厨房</label>
+                    <select name="kitchen" class="form-select">
+                        <option value="kitchen_a" ${'selected' if (not basket) or basket.kitchen == 'kitchen_a' else ''}>A厨房</option>
+                        <option value="kitchen_b" ${'selected' if basket and basket.kitchen == 'kitchen_b' else ''}>B厨房</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">套餐类型</label>
+                    <select name="package_type_id" class="form-select">
+                        <option value="">通用</option>
+                        <option py:for="p in packages" value="${p.id}"
+                                ${'selected' if basket and basket.package_typeID == p.id else ''}>
+                            ${p.code} - ${p.name}
+                        </option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">当前状态</label>
+                    <select name="status" class="form-select">
+                        <option value="available" ${'selected' if (not basket) or basket.status == 'available' else ''}>可用</option>
+                        <option value="in_use" ${'selected' if basket and basket.status == 'in_use' else ''}>使用中</option>
+                        <option value="cleaning" ${'selected' if basket and basket.status == 'cleaning' else ''}>清洗中</option>
+                        <option value="disabled" ${'selected' if basket and basket.status == 'disabled' else ''}>停用</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">最近清洗日期</label>
+                    <input type="date" name="last_clean_date" class="form-control"
+                           value="${basket.last_clean_date.isoformat() if basket else ''}">
+                </div>
+                <div class="col-md-12">
+                    <label class="form-label">备注</label>
+                    <textarea name="notes" class="form-control" rows="2">${basket.notes if basket else ''}</textarea>
+                </div>
+            </div>
+            <div class="mt-4">
+                <button type="submit" class="btn btn-primary me-2">
+                    <i class="bi bi-check-lg me-1"></i>${'保存修改' if basket else '创建餐篮'}
+                </button>
+                <a href="/baskets" class="btn btn-outline-secondary">取消</a>
+            </div>
+        </form>
+    </div>
+</py:block>
+</html>

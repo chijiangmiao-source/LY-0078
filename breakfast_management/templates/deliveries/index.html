@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html xmlns:py="http://genshi.edgewall.org/" py:extends="'master.html'">
+<py:block name="title">配送管理 - 民宿早餐备餐与配送管理系统</py:block>
+<py:block name="content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-0"><i class="bi bi-truck me-2 text-primary"></i>配送管理</h3>
+            <small class="text-muted">餐篮配送登记与退回管理</small>
+        </div>
+        <a href="/deliveries/new" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i>新建配送
+        </a>
+    </div>
+
+    <div class="card p-3 mb-4">
+        <form method="GET" action="/deliveries" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label small text-muted">配送单号/备注</label>
+                <input type="text" name="keyword" class="form-control" placeholder="搜索..." value="${filters.get('keyword', '')}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted">配送日期</label>
+                <input type="date" name="delivery_date" class="form-control" value="${filters.get('delivery_date', today.isoformat())}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted">时段</label>
+                <select name="time_slot" class="form-select">
+                    <option value="">全部</option>
+                    <option value="early" ${'selected' if filters.get('time_slot') == 'early' else ''}>早段</option>
+                    <option value="morning" ${'selected' if filters.get('time_slot') == 'morning' else ''}>中段</option>
+                    <option value="late" ${'selected' if filters.get('time_slot') == 'late' else ''}>晚段</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted">房间</label>
+                <select name="room_id" class="form-select">
+                    <option value="">全部</option>
+                    <option py:for="r in rooms" value="${r.id}" ${'selected' if filters.get('room_id') == str(r.id) else ''}>${r.room_number}</option>
+                </select>
+            </div>
+            <div class="col-md-1">
+                <label class="form-label small text-muted">状态</label>
+                <select name="status" class="form-select">
+                    <option value="">全部</option>
+                    <option value="pending" ${'selected' if filters.get('status') == 'pending' else ''}>待送</option>
+                    <option value="delivering" ${'selected' if filters.get('status') == 'delivering' else ''}>配送中</option>
+                    <option value="delivered" ${'selected' if filters.get('status') == 'delivered' else ''}>已达</option>
+                    <option value="returned" ${'selected' if filters.get('status') == 'returned' else ''}>退回</option>
+                    <option value="cancelled" ${'selected' if filters.get('status') == 'cancelled' else ''}>取消</option>
+                </select>
+            </div>
+            <div class="col-md-1">
+                <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search"></i></button>
+            </div>
+            <div class="col-md-1">
+                <a href="/deliveries" class="btn btn-outline-secondary w-100">重置</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="card">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>配送单号</th>
+                    <th>房间</th>
+                    <th>餐篮</th>
+                    <th>时段</th>
+                    <th>配送员</th>
+                    <th>送达时间</th>
+                    <th>退回时间</th>
+                    <th>状态</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr py:if="not deliveries">
+                    <td colspan="9" class="text-center text-muted py-4">
+                        <i class="bi bi-inbox fs-1 d-block mb-2"></i>暂无配送记录
+                    </td>
+                </tr>
+                <tr py:for="d in deliveries">
+                    <td class="fw-bold text-primary">${d.delivery_no}</td>
+                    <td><span class="badge bg-info text-dark">${d.room.room_number}</span></td>
+                    <td>${d.basket.basket_code if d.basket else '-'}</td>
+                    <td>
+                        <py:choose>
+                            <py:when test="d.time_slot == 'early'"><span class="badge bg-primary">早段</span></py:when>
+                            <py:when test="d.time_slot == 'morning'"><span class="badge bg-success">中段</span></py:when>
+                            <py:when test="d.time_slot == 'late'"><span class="badge bg-warning text-dark">晚段</span></py:when>
+                        </py:choose>
+                    </td>
+                    <td>${d.delivery_person.real_name if d.delivery_person else '-'}</td>
+                    <td class="small text-muted">${d.delivered_at.strftime('%H:%M:%S') if d.delivered_at else '-'}</td>
+                    <td class="small text-muted">${d.returned_at.strftime('%H:%M:%S') if d.returned_at else '-'}</td>
+                    <td>
+                        <py:choose>
+                            <py:when test="d.status == 'pending'"><span class="badge bg-secondary">待配送</span></py:when>
+                            <py:when test="d.status == 'delivering'"><span class="badge bg-primary">配送中</span></py:when>
+                            <py:when test="d.status == 'delivered'"><span class="badge bg-success">已送达</span></py:when>
+                            <py:when test="d.status == 'returned'"><span class="badge bg-info">已退回</span></py:when>
+                            <py:when test="d.status == 'cancelled'"><span class="badge bg-danger">已取消</span></py:when>
+                        </py:choose>
+                    </td>
+                    <td>
+                        <py:if test="d.status in ('pending', 'delivering')">
+                            <a href="/deliveries/${d.id}/deliver" class="btn btn-sm btn-success me-1" title="标记送达">
+                                <i class="bi bi-check2-circle"></i> 送达
+                            </a>
+                        </py:if>
+                        <py:if test="d.status == 'delivered'">
+                            <a href="/deliveries/${d.id}/return" class="btn btn-sm btn-info me-1" title="登记退回">
+                                <i class="bi bi-arrow-return-left"></i> 退回
+                            </a>
+                        </py:if>
+                        <py:if test="d.status not in ('delivered', 'returned', 'cancelled')">
+                            <a href="/deliveries/${d.id}/delete" class="btn btn-sm btn-outline-danger"
+                               onclick="return confirm('确定取消该配送吗？')">
+                                <i class="bi bi-x-lg"></i>
+                            </a>
+                        </py:if>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</py:block>
+</html>

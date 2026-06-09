@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html xmlns:py="http://genshi.edgewall.org/" py:extends="'master.html'">
+<py:block name="title">早餐套餐管理 - 民宿早餐备餐与配送管理系统</py:block>
+<py:block name="content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-0"><i class="bi bi-card-list me-2 text-primary"></i>早餐套餐管理</h3>
+            <small class="text-muted">管理早餐套餐配置</small>
+        </div>
+        <a href="/packages/new" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i>新增套餐
+        </a>
+    </div>
+
+    <div class="card p-3 mb-4">
+        <form method="GET" action="/packages" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label small text-muted">关键词</label>
+                <input type="text" name="keyword" class="form-control" placeholder="名称/编号/描述" value="${filters.get('keyword', '')}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted">状态</label>
+                <select name="is_active" class="form-select">
+                    <option value="">全部</option>
+                    <option value="true" ${'selected' if filters.get('is_active') == 'true' else ''}>启用</option>
+                    <option value="false" ${'selected' if filters.get('is_active') == 'false' else ''}>停用</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search me-1"></i>筛选</button>
+            </div>
+            <div class="col-md-2">
+                <a href="/packages" class="btn btn-outline-secondary w-100">重置</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="card">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>编号</th>
+                    <th>套餐名称</th>
+                    <th>价格</th>
+                    <th>包含餐品</th>
+                    <th>描述</th>
+                    <th>状态</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr py:if="not packages">
+                    <td colspan="7" class="text-center text-muted py-4">
+                        <i class="bi bi-inbox fs-1 d-block mb-2"></i>暂无数据
+                    </td>
+                </tr>
+                <tr py:for="p in packages">
+                    <td class="fw-bold text-primary">${p.code}</td>
+                    <td class="fw-medium">${p.name}</td>
+                    <td>¥${p.price}</td>
+                    <td class="text-muted small">${p.items or '-'}</td>
+                    <td class="text-muted small">${p.description or '-'}</td>
+                    <td>
+                        <py:choose>
+                            <py:when test="p.is_active"><span class="badge bg-success">启用</span></py:when>
+                            <py:otherwise><span class="badge bg-secondary">停用</span></py:otherwise>
+                        </py:choose>
+                    </td>
+                    <td>
+                        <a href="/packages/${p.id}/edit" class="btn btn-sm btn-outline-primary me-1">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <a href="/packages/${p.id}/delete" class="btn btn-sm btn-outline-danger"
+                           onclick="return confirm('确定停用该套餐吗？')">
+                            <i class="bi bi-trash"></i>
+                        </a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</py:block>
+</html>

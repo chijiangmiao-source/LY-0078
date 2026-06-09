@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:py="http://genshi.edgewall.org/" xmlns:xi="http://www.w3.org/2001/XInclude">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title py:block="title">民宿早餐备餐与配送管理系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; }
+        .sidebar { min-height: 100vh; background: linear-gradient(180deg, #1a73e8 0%, #1557b0 100%); }
+        .sidebar .nav-link { color: rgba(255,255,255,.85); padding: .75rem 1rem; border-radius: .5rem; margin: .25rem 0; }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active { color: #fff; background: rgba(255,255,255,.15); }
+        .sidebar .nav-link i { margin-right: .5rem; }
+        .content-wrapper { padding: 1.5rem; }
+        .card { border: none; box-shadow: 0 .125rem .25rem rgba(0,0,0,.075); border-radius: .75rem; }
+        .btn { border-radius: .5rem; }
+        .form-control, .form-select { border-radius: .5rem; }
+        .table { background: #fff; border-radius: .5rem; overflow: hidden; }
+        .stat-card { border: none; border-radius: 1rem; color: #fff; }
+        .stat-card.blue { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .stat-card.green { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
+        .stat-card.orange { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+        .stat-card.purple { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+        .badge { font-weight: 500; padding: .35em .65em; }
+        .flash-messages { position: fixed; top: 1rem; right: 1rem; z-index: 9999; }
+    </style>
+</head>
+<body>
+    <py:def function="flash_messages()">
+        <py:if test="defined('session') and session">
+            <py:try>
+                <py:with vars="flash_data = session.get('flash')">
+                    <py:if test="flash_data">
+                        <py:choose>
+                            <py:when test="isinstance(flash_data, list)">
+                                <div py:for="msg in flash_data" class="alert alert-${msg.get('category', 'info') if isinstance(msg, dict) else 'info'} alert-dismissible fade show" role="alert">
+                                    ${msg.get('message', str(msg)) if isinstance(msg, dict) else str(msg)}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>
+                            </py:when>
+                            <py:when test="isinstance(flash_data, dict)">
+                                <div class="alert alert-${flash_data.get('category', 'info')} alert-dismissible fade show" role="alert">
+                                    ${flash_data.get('message', str(flash_data))}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>
+                            </py:when>
+                        </py:choose>
+                    </py:if>
+                </py:with>
+            </py:try>
+        </py:if>
+    </py:def>
+
+    <py:with vars="user = defined('current_user') and current_user or None">
+        <py:if test="not user">
+            <py:block name="login_content">
+            </py:block>
+        </py:if>
+        <py:else>
+            <div class="container-fluid">
+                <div class="row flex-nowrap">
+                    <div class="col-auto col-md-3 col-xl-2 px-sm-2 px-0 sidebar">
+                        <div class="d-flex flex-column align-items-center align-items-sm-start px-3 pt-4 text-white min-vh-100">
+                            <a href="/dashboard" class="d-flex align-items-center pb-4 mb-3 me-md-auto text-white text-decoration-none border-bottom border-white border-opacity-25 w-100">
+                                <i class="bi bi-basket3-fill fs-4 me-2"></i>
+                                <span class="fs-5 fw-bold">早餐管理系统</span>
+                            </a>
+                            <ul class="nav nav-pills flex-column mb-sm-auto mb-0 align-items-center align-items-sm-start w-100" id="menu">
+                                <li class="w-100">
+                                    <a href="/dashboard" class="nav-link ${'active' if defined('page') and page == 'dashboard' else ''}">
+                                        <i class="bi bi-speedometer2"></i><span class="d-none d-sm-inline">首页统计</span>
+                                    </a>
+                                </li>
+                                <li class="w-100">
+                                    <a href="/rooms" class="nav-link ${'active' if defined('page') and page == 'rooms' else ''}">
+                                        <i class="bi bi-door-open"></i><span class="d-none d-sm-inline">房间管理</span>
+                                    </a>
+                                </li>
+                                <li class="w-100">
+                                    <a href="/guests" class="nav-link ${'active' if defined('page') and page == 'guests' else ''}">
+                                        <i class="bi bi-people"></i><span class="d-none d-sm-inline">住客登记</span>
+                                    </a>
+                                </li>
+                                <li class="w-100">
+                                    <a href="/packages" class="nav-link ${'active' if defined('page') and page == 'packages' else ''}">
+                                        <i class="bi bi-card-list"></i><span class="d-none d-sm-inline">早餐套餐</span>
+                                    </a>
+                                </li>
+                                <li class="w-100">
+                                    <a href="/baskets" class="nav-link ${'active' if defined('page') and page == 'baskets' else ''}">
+                                        <i class="bi bi-basket"></i><span class="d-none d-sm-inline">餐篮管理</span>
+                                    </a>
+                                </li>
+                                <li class="w-100">
+                                    <a href="/schedules" class="nav-link ${'active' if defined('page') and page == 'schedules' else ''}">
+                                        <i class="bi bi-calendar-check"></i><span class="d-none d-sm-inline">备餐排期</span>
+                                    </a>
+                                </li>
+                                <li class="w-100">
+                                    <a href="/assembly" class="nav-link ${'active' if defined('page') and page == 'assembly' else ''}">
+                                        <i class="bi bi-box-seam"></i><span class="d-none d-sm-inline">餐篮装配</span>
+                                    </a>
+                                </li>
+                                <li class="w-100">
+                                    <a href="/deliveries" class="nav-link ${'active' if defined('page') and page == 'deliveries' else ''}">
+                                        <i class="bi bi-truck"></i><span class="d-none d-sm-inline">配送管理</span>
+                                    </a>
+                                </li>
+                            </ul>
+                            <hr class="border-white border-opacity-25 w-100">
+                            <div class="pb-4 w-100">
+                                <a href="/logout" class="nav-link text-white text-opacity-75">
+                                    <i class="bi bi-box-arrow-right"></i><span class="d-none d-sm-inline">退出登录</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col py-3 content-wrapper">
+                        ${flash_messages()}
+                        <py:block name="content">
+                        </py:block>
+                    </div>
+                </div>
+            </div>
+        </py:else>
+    </py:with>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        setTimeout(() => {
+            document.querySelectorAll('.alert').forEach(a => {
+                try { bootstrap.Alert.getOrCreateInstance(a).close(); } catch(e) {}
+            });
+        }, 5000);
+    </script>
+</body>
+</html>

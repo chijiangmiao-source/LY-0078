@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html xmlns:py="http://genshi.edgewall.org/" py:extends="'master.html'">
+<py:block name="title">房间管理 - 民宿早餐备餐与配送管理系统</py:block>
+<py:block name="content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-0"><i class="bi bi-door-open me-2 text-primary"></i>房间管理</h3>
+            <small class="text-muted">管理民宿房间信息</small>
+        </div>
+        <a href="/rooms/new" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i>新增房间
+        </a>
+    </div>
+
+    <div class="card p-3 mb-4">
+        <form method="GET" action="/rooms" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label small text-muted">关键词</label>
+                <input type="text" name="keyword" class="form-control" placeholder="房间号/备注" value="${filters.get('keyword', '')}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted">房间类型</label>
+                <select name="room_type" class="form-select">
+                    <option value="">全部</option>
+                    <option value="single" ${'selected' if filters.get('room_type') == 'single' else ''}>单人间</option>
+                    <option value="double" ${'selected' if filters.get('room_type') == 'double' else ''}>双人间</option>
+                    <option value="suite" ${'selected' if filters.get('room_type') == 'suite' else ''}>套房</option>
+                    <option value="family" ${'selected' if filters.get('room_type') == 'family' else ''}>家庭房</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted">状态</label>
+                <select name="status" class="form-select">
+                    <option value="">全部</option>
+                    <option value="vacant" ${'selected' if filters.get('status') == 'vacant' else ''}>空闲</option>
+                    <option value="occupied" ${'selected' if filters.get('status') == 'occupied' else ''}>已入住</option>
+                    <option value="maintenance" ${'selected' if filters.get('status') == 'maintenance' else ''}>维护中</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search me-1"></i>筛选</button>
+            </div>
+            <div class="col-md-2">
+                <a href="/rooms" class="btn btn-outline-secondary w-100">重置</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="card">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>房间号</th>
+                    <th>类型</th>
+                    <th>楼层</th>
+                    <th>状态</th>
+                    <th>备注</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr py:if="not rooms">
+                    <td colspan="6" class="text-center text-muted py-4">
+                        <i class="bi bi-inbox fs-1 d-block mb-2"></i>暂无数据
+                    </td>
+                </tr>
+                <tr py:for="room in rooms">
+                    <td class="fw-bold">${room.room_number}</td>
+                    <td>
+                        <py:choose>
+                            <py:when test="room.room_type == 'single'">单人间</py:when>
+                            <py:when test="room.room_type == 'double'">双人间</py:when>
+                            <py:when test="room.room_type == 'suite'">套房</py:when>
+                            <py:when test="room.room_type == 'family'">家庭房</py:when>
+                            <py:otherwise>${room.room_type}</py:otherwise>
+                        </py:choose>
+                    </td>
+                    <td>${room.floor}F</td>
+                    <td>
+                        <py:choose>
+                            <py:when test="room.status == 'vacant'"><span class="badge bg-success">空闲</span></py:when>
+                            <py:when test="room.status == 'occupied'"><span class="badge bg-primary">已入住</span></py:when>
+                            <py:when test="room.status == 'maintenance'"><span class="badge bg-warning text-dark">维护中</span></py:when>
+                        </py:choose>
+                    </td>
+                    <td class="text-muted">${room.notes or '-'}</td>
+                    <td>
+                        <a href="/rooms/${room.id}/edit" class="btn btn-sm btn-outline-primary me-1">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <a href="/rooms/${room.id}/delete" class="btn btn-sm btn-outline-danger"
+                           onclick="return confirm('确定删除该房间吗？')">
+                            <i class="bi bi-trash"></i>
+                        </a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</py:block>
+</html>

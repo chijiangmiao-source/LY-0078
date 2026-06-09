@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html xmlns:py="http://genshi.edgewall.org/" py:extends="'master.html'">
+<py:block name="title">备餐排期 - 民宿早餐备餐与配送管理系统</py:block>
+<py:block name="content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-0"><i class="bi bi-calendar-check me-2 text-primary"></i>备餐排期</h3>
+            <small class="text-muted">管理每日备餐计划</small>
+        </div>
+        <a href="/schedules/new" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i>新增排期
+        </a>
+    </div>
+
+    <div class="card p-3 mb-4">
+        <form method="GET" action="/schedules" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label small text-muted">备餐日期</label>
+                <input type="date" name="schedule_date" class="form-control" value="${filters.get('schedule_date', today.isoformat())}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted">时段</label>
+                <select name="time_slot" class="form-select">
+                    <option value="">全部</option>
+                    <option value="early" ${'selected' if filters.get('time_slot') == 'early' else ''}>早段</option>
+                    <option value="morning" ${'selected' if filters.get('time_slot') == 'morning' else ''}>中段</option>
+                    <option value="late" ${'selected' if filters.get('time_slot') == 'late' else ''}>晚段</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted">状态</label>
+                <select name="status" class="form-select">
+                    <option value="">全部</option>
+                    <option value="pending" ${'selected' if filters.get('status') == 'pending' else ''}>待备餐</option>
+                    <option value="preparing" ${'selected' if filters.get('status') == 'preparing' else ''}>备餐中</option>
+                    <option value="completed" ${'selected' if filters.get('status') == 'completed' else ''}>已完成</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted">套餐</label>
+                <select name="package_type_id" class="form-select">
+                    <option value="">全部</option>
+                    <option py:for="p in packages" value="${p.id}" ${'selected' if filters.get('package_type_id') == str(p.id) else ''}>${p.name}</option>
+                </select>
+            </div>
+            <div class="col-md-1">
+                <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search"></i></button>
+            </div>
+            <div class="col-md-1">
+                <a href="/schedules" class="btn btn-outline-secondary w-100">重置</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="card">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>日期</th>
+                    <th>时段</th>
+                    <th>套餐类型</th>
+                    <th>数量</th>
+                    <th>备餐人</th>
+                    <th>完成时间</th>
+                    <th>状态</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr py:if="not schedules">
+                    <td colspan="8" class="text-center text-muted py-4">
+                        <i class="bi bi-inbox fs-1 d-block mb-2"></i>暂无排期
+                    </td>
+                </tr>
+                <tr py:for="s in schedules">
+                    <td>${s.schedule_date.strftime('%Y-%m-%d')}</td>
+                    <td>
+                        <py:choose>
+                            <py:when test="s.time_slot == 'early'"><span class="badge bg-primary">早段 6:00-7:00</span></py:when>
+                            <py:when test="s.time_slot == 'morning'"><span class="badge bg-success">中段 7:00-8:00</span></py:when>
+                            <py:when test="s.time_slot == 'late'"><span class="badge bg-warning text-dark">晚段 8:00-9:00</span></py:when>
+                        </py:choose>
+                    </td>
+                    <td class="fw-medium">${s.package_type.name if s.package_type else '-'}</td>
+                    <td><span class="badge bg-info text-dark">${s.quantity} 份</span></td>
+                    <td>${s.prepared_by.real_name if s.prepared_by else '-'}</td>
+                    <td class="text-muted small">${s.completed_at.strftime('%H:%M:%S') if s.completed_at else '-'}</td>
+                    <td>
+                        <py:choose>
+                            <py:when test="s.status == 'pending'"><span class="badge bg-secondary">待备餐</span></py:when>
+                            <py:when test="s.status == 'preparing'"><span class="badge bg-primary">备餐中</span></py:when>
+                            <py:when test="s.status == 'completed'"><span class="badge bg-success">已完成</span></py:when>
+                        </py:choose>
+                    </td>
+                    <td>
+                        <py:if test="s.status != 'completed'">
+                            <a href="/schedules/${s.id}/complete" class="btn btn-sm btn-success me-1">
+                                <i class="bi bi-check-circle"></i> 完成
+                            </a>
+                            <a href="/schedules/${s.id}/edit" class="btn btn-sm btn-outline-primary me-1">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <a href="/schedules/${s.id}/delete" class="btn btn-sm btn-outline-danger"
+                               onclick="return confirm('确定删除该排期吗？')">
+                                <i class="bi bi-trash"></i>
+                            </a>
+                        </py:if>
+                        <py:else>
+                            <span class="text-muted">—</span>
+                        </py:else>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</py:block>
+</html>
