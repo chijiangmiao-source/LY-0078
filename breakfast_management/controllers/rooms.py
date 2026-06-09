@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-from tg import expose, request, redirect, url, flash
-from breakfast_management.controllers.base import BaseController, require_login
+from tg import expose, request, redirect, url
+from breakfast_management.controllers.base import BaseController, require_login, _flash
 from breakfast_management.model import Room
 from sqlobject import AND, OR
 
@@ -40,10 +40,10 @@ class RoomsController(BaseController):
         try:
             room_number = kw.get('room_number', '').strip()
             if not room_number:
-                flash('房间号不能为空', 'danger')
+                self._flash('房间号不能为空', 'danger')
                 redirect(url('/rooms/new'))
             if Room.selectBy(room_number=room_number).count():
-                flash('房间号已存在', 'danger')
+                self._flash('房间号已存在', 'danger')
                 redirect(url('/rooms/new'))
 
             Room(
@@ -53,9 +53,9 @@ class RoomsController(BaseController):
                 status=kw.get('status', 'vacant'),
                 notes=kw.get('notes', '')
             )
-            flash('房间创建成功', 'success')
+            self._flash('房间创建成功', 'success')
         except Exception as e:
-            flash(f'创建失败: {str(e)}', 'danger')
+            self._flash(f'创建失败: {str(e)}', 'danger')
         redirect(url('/rooms'))
 
     @expose('breakfast_management.templates.rooms.form')
@@ -64,7 +64,7 @@ class RoomsController(BaseController):
         try:
             room = Room.get(int(id))
         except:
-            flash('房间不存在', 'danger')
+            self._flash('房间不存在', 'danger')
             redirect(url('/rooms'))
         return self._get_context(page='rooms', room=room, errors=None)
 
@@ -76,7 +76,7 @@ class RoomsController(BaseController):
             room_number = kw.get('room_number', '').strip()
             if room_number and room_number != room.room_number:
                 if Room.selectBy(room_number=room_number).count():
-                    flash('房间号已存在', 'danger')
+                    self._flash('房间号已存在', 'danger')
                     redirect(url(f'/rooms/{id}/edit'))
                 room.room_number = room_number
             if kw.get('room_type'):
@@ -87,9 +87,9 @@ class RoomsController(BaseController):
                 room.status = kw['status']
             if 'notes' in kw:
                 room.notes = kw.get('notes', '')
-            flash('房间更新成功', 'success')
+            self._flash('房间更新成功', 'success')
         except Exception as e:
-            flash(f'更新失败: {str(e)}', 'danger')
+            self._flash(f'更新失败: {str(e)}', 'danger')
         redirect(url('/rooms'))
 
     @expose()
@@ -98,7 +98,7 @@ class RoomsController(BaseController):
         try:
             room = Room.get(int(id))
             room.destroySelf()
-            flash('房间已删除', 'success')
+            self._flash('房间已删除', 'success')
         except Exception as e:
-            flash(f'删除失败: {str(e)}', 'danger')
+            self._flash(f'删除失败: {str(e)}', 'danger')
         redirect(url('/rooms'))

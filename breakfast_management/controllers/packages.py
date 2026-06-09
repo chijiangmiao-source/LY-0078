@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-from tg import expose, request, redirect, url, flash
-from breakfast_management.controllers.base import BaseController, require_login
+from tg import expose, request, redirect, url
+from breakfast_management.controllers.base import BaseController, require_login, _flash
 from breakfast_management.model import BreakfastPackage
 from sqlobject import AND, OR
 
@@ -41,13 +41,13 @@ class PackagesController(BaseController):
             name = kw.get('name', '').strip()
             code = kw.get('code', '').strip()
             if not name or not code:
-                flash('套餐名称和编号不能为空', 'danger')
+                self._flash('套餐名称和编号不能为空', 'danger')
                 redirect(url('/packages/new'))
             if BreakfastPackage.selectBy(code=code).count():
-                flash('套餐编号已存在', 'danger')
+                self._flash('套餐编号已存在', 'danger')
                 redirect(url('/packages/new'))
             if BreakfastPackage.selectBy(name=name).count():
-                flash('套餐名称已存在', 'danger')
+                self._flash('套餐名称已存在', 'danger')
                 redirect(url('/packages/new'))
 
             BreakfastPackage(
@@ -58,9 +58,9 @@ class PackagesController(BaseController):
                 items=kw.get('items', ''),
                 is_active=kw.get('is_active') == 'on'
             )
-            flash('早餐套餐创建成功', 'success')
+            self._flash('早餐套餐创建成功', 'success')
         except Exception as e:
-            flash(f'创建失败: {str(e)}', 'danger')
+            self._flash(f'创建失败: {str(e)}', 'danger')
         redirect(url('/packages'))
 
     @expose('breakfast_management.templates.packages.form')
@@ -69,7 +69,7 @@ class PackagesController(BaseController):
         try:
             package = BreakfastPackage.get(int(id))
         except:
-            flash('套餐不存在', 'danger')
+            self._flash('套餐不存在', 'danger')
             redirect(url('/packages'))
         return self._get_context(page='packages', package=package, errors=None)
 
@@ -83,12 +83,12 @@ class PackagesController(BaseController):
 
             if code and code != package.code:
                 if BreakfastPackage.selectBy(code=code).count():
-                    flash('套餐编号已存在', 'danger')
+                    self._flash('套餐编号已存在', 'danger')
                     redirect(url(f'/packages/{id}/edit'))
                 package.code = code
             if name and name != package.name:
                 if BreakfastPackage.selectBy(name=name).count():
-                    flash('套餐名称已存在', 'danger')
+                    self._flash('套餐名称已存在', 'danger')
                     redirect(url(f'/packages/{id}/edit'))
                 package.name = name
 
@@ -101,9 +101,9 @@ class PackagesController(BaseController):
             if 'is_active' in kw:
                 package.is_active = kw.get('is_active') == 'on'
 
-            flash('套餐更新成功', 'success')
+            self._flash('套餐更新成功', 'success')
         except Exception as e:
-            flash(f'更新失败: {str(e)}', 'danger')
+            self._flash(f'更新失败: {str(e)}', 'danger')
         redirect(url('/packages'))
 
     @expose()
@@ -112,7 +112,7 @@ class PackagesController(BaseController):
         try:
             package = BreakfastPackage.get(int(id))
             package.is_active = False
-            flash('套餐已停用', 'success')
+            self._flash('套餐已停用', 'success')
         except Exception as e:
-            flash(f'操作失败: {str(e)}', 'danger')
+            self._flash(f'操作失败: {str(e)}', 'danger')
         redirect(url('/packages'))

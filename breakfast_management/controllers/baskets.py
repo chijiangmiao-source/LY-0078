@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-from tg import expose, request, redirect, url, flash
-from breakfast_management.controllers.base import BaseController, require_login
+from tg import expose, request, redirect, url
+from breakfast_management.controllers.base import BaseController, require_login, _flash
 from breakfast_management.model import Basket, BreakfastPackage
 from sqlobject import AND, OR
 from datetime import date
@@ -46,10 +46,10 @@ class BasketsController(BaseController):
         try:
             basket_code = kw.get('basket_code', '').strip()
             if not basket_code:
-                flash('餐篮编号不能为空', 'danger')
+                self._flash('餐篮编号不能为空', 'danger')
                 redirect(url('/baskets/new'))
             if Basket.selectBy(basket_code=basket_code).count():
-                flash('餐篮编号已存在，不能重复', 'danger')
+                self._flash('餐篮编号已存在，不能重复', 'danger')
                 redirect(url('/baskets/new'))
 
             last_clean = kw.get('last_clean_date') or date.today().isoformat()
@@ -62,9 +62,9 @@ class BasketsController(BaseController):
                 last_clean_date=date.fromisoformat(last_clean),
                 notes=kw.get('notes', '')
             )
-            flash('餐篮创建成功', 'success')
+            self._flash('餐篮创建成功', 'success')
         except Exception as e:
-            flash(f'创建失败: {str(e)}', 'danger')
+            self._flash(f'创建失败: {str(e)}', 'danger')
         redirect(url('/baskets'))
 
     @expose('breakfast_management.templates.baskets.form')
@@ -73,7 +73,7 @@ class BasketsController(BaseController):
         try:
             basket = Basket.get(int(id))
         except:
-            flash('餐篮不存在', 'danger')
+            self._flash('餐篮不存在', 'danger')
             redirect(url('/baskets'))
         packages = list(BreakfastPackage.selectBy(is_active=True))
         return self._get_context(page='baskets', basket=basket, packages=packages, errors=None)
@@ -87,7 +87,7 @@ class BasketsController(BaseController):
 
             if basket_code and basket_code != basket.basket_code:
                 if Basket.selectBy(basket_code=basket_code).count():
-                    flash('餐篮编号已存在，不能重复', 'danger')
+                    self._flash('餐篮编号已存在，不能重复', 'danger')
                     redirect(url(f'/baskets/{id}/edit'))
                 basket.basket_code = basket_code
 
@@ -105,9 +105,9 @@ class BasketsController(BaseController):
             if 'notes' in kw:
                 basket.notes = kw.get('notes', '')
 
-            flash('餐篮更新成功', 'success')
+            self._flash('餐篮更新成功', 'success')
         except Exception as e:
-            flash(f'更新失败: {str(e)}', 'danger')
+            self._flash(f'更新失败: {str(e)}', 'danger')
         redirect(url('/baskets'))
 
     @expose()
@@ -116,10 +116,10 @@ class BasketsController(BaseController):
         try:
             basket = Basket.get(int(id))
             if basket.status == 'in_use':
-                flash('使用中的餐篮不能删除', 'danger')
+                self._flash('使用中的餐篮不能删除', 'danger')
             else:
                 basket.status = 'disabled'
-                flash('餐篮已停用', 'success')
+                self._flash('餐篮已停用', 'success')
         except Exception as e:
-            flash(f'操作失败: {str(e)}', 'danger')
+            self._flash(f'操作失败: {str(e)}', 'danger')
         redirect(url('/baskets'))

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-from tg import expose, request, redirect, url, flash
+from tg import expose, request, redirect, url
 from tg.decorators import with_trailing_slash
-from breakfast_management.controllers.base import BaseController, require_login
+from breakfast_management.controllers.base import BaseController, require_login, _flash
 from breakfast_management.model import (
     DeliveryRecord, Room, Guest, Basket, BreakfastPackage,
     PreparationSchedule

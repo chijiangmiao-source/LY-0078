@@ -134,8 +134,8 @@ def init_model(sqlhub_ref):
         DeliveryRecord.createTable(ifNotExists=True)
 
         if not User.selectBy(username='admin').count():
-            import hashlib
-            pwd = hashlib.md5(b'admin123').hexdigest()
+            from breakfast_management.lib.security import hash_password
+            pwd = hash_password('admin123')
             User(
                 username='admin',
                 password=pwd,

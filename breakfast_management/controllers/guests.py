@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-from tg import expose, request, redirect, url, flash
-from breakfast_management.controllers.base import BaseController, require_login
+from tg import expose, request, redirect, url
+from breakfast_management.controllers.base import BaseController, require_login, _flash
 from breakfast_management.model import Guest, Room, BreakfastPackage
 from sqlobject import AND, OR
 from datetime import date, datetime
@@ -52,8 +52,36 @@ class GuestsController(BaseController):
         try:
             name = kw.get('name', '').strip()
             room_id = kw.get('room_id')
+            id_card = kw.get('id_card', '').strip()
+            phone = kw.get('phone', '').strip()
+
             if not name or not room_id:
-                flash('姓名和房间不能为空', 'danger')
+                self._flash('姓名和房间不能为空', 'danger')
+                redirect(url('/guests/new'))
+
+            dup_query = Guest.select(AND(
+                Guest.q.roomID == int(room_id),
+                Guest.q.status == 'checked_in',
+                Guest.q.name == name
+            ))
+            if id_card:
+                dup_query = Guest.select(AND(
+                    Guest.q.roomID == int(room_id),
+                    Guest.q.status == 'checked_in',
+                    OR(
+                        Guest.q.id_card == id_card,
+                        AND(Guest.q.name == name, Guest.q.phone == phone) if phone else Guest.q.name == name
+                    )
+                ))
+            elif phone:
+                dup_query = Guest.select(AND(
+                    Guest.q.roomID == int(room_id),
+                    Guest.q.status == 'checked_in',
+                    AND(Guest.q.name == name, Guest.q.phone == phone)
+                ))
+
+            if dup_query.count() > 0:
+                self._flash('该住客已在此房间登记过，不可重复登记', 'danger')
                 redirect(url('/guests/new'))
 
             check_in = kw.get('check_in_date') or date.today().isoformat()
@@ -61,8 +89,8 @@ class GuestsController(BaseController):
 
             guest = Guest(
                 name=name,
-                id_card=kw.get('id_card', ''),
-                phone=kw.get('phone', ''),
+                id_card=id_card,
+                phone=phone,
                 roomID=int(room_id),
                 check_in_date=date.fromisoformat(check_in),
                 check_out_date=date.fromisoformat(check_out) if check_out else None,
@@ -75,9 +103,9 @@ class GuestsController(BaseController):
             room = Room.get(int(room_id))
             room.status = 'occupied'
 
-            flash('住客登记成功', 'success')
+            self._flash('住客登记成功', 'success')
         except Exception as e:
-            flash(f'登记失败: {str(e)}', 'danger')
+            self._flash(f'登记失败: {str(e)}', 'danger')
         redirect(url('/guests'))
 
     @expose('breakfast_management.templates.guests.form')
@@ -103,19 +131,54 @@ class GuestsController(BaseController):
     def update(self, id, **kw):
         try:
             guest = Guest.get(int(id))
+
+            new_name = kw.get('name', '').strip() if kw.get('name') else guest.name
+            new_room_id = int(kw['room_id']) if kw.get('room_id') else guest.roomID
+            new_id_card = kw.get('id_card', '').strip() if 'id_card' in kw else guest.id_card
+            new_phone = kw.get('phone', '').strip() if 'phone' in kw else guest.phone
+
+            if new_room_id != guest.roomID or new_name != guest.name or new_id_card != guest.id_card or new_phone != guest.phone:
+                dup_query = Guest.select(AND(
+                    Guest.q.id != int(id),
+                    Guest.q.roomID == new_room_id,
+                    Guest.q.status == 'checked_in',
+                    Guest.q.name == new_name
+                ))
+                if new_id_card:
+                    dup_query = Guest.select(AND(
+                        Guest.q.id != int(id),
+                        Guest.q.roomID == new_room_id,
+                        Guest.q.status == 'checked_in',
+                        OR(
+                            Guest.q.id_card == new_id_card,
+                            AND(Guest.q.name == new_name, Guest.q.phone == new_phone) if new_phone else Guest.q.name == new_name
+                        )
+                    ))
+                elif new_phone:
+                    dup_query = Guest.select(AND(
+                        Guest.q.id != int(id),
+                        Guest.q.roomID == new_room_id,
+                        Guest.q.status == 'checked_in',
+                        AND(Guest.q.name == new_name, Guest.q.phone == new_phone)
+                    ))
+                if dup_query.count() > 0:
+                    self._flash('该住客已在此房间登记过，不可重复登记', 'danger')
+                    redirect(url(f'/guests/{id}/edit'))
+
             if kw.get('name'):
-                guest.name = kw['name'].strip()
+                guest.name = new_name
             if 'id_card' in kw:
-                guest.id_card = kw.get('id_card', '')
+                guest.id_card = new_id_card
             if 'phone' in kw:
-                guest.phone = kw.get('phone', '')
+                guest.phone = new_phone
             if kw.get('room_id'):
                 old_room = guest.room
-                if int(kw['room_id']) != old_room.id:
-                    old_room.status = 'vacant'
-                    new_room = Room.get(int(kw['room_id']))
+                if new_room_id != old_room.id:
+                    if not Guest.select(AND(Guest.q.roomID == old_room.id, Guest.q.status == 'checked_in', Guest.q.id != int(id))).count():
+                        old_room.status = 'vacant'
+                    new_room = Room.get(new_room_id)
                     new_room.status = 'occupied'
-                guest.roomID = int(kw['room_id'])
+                guest.roomID = new_room_id
             if kw.get('check_in_date'):
                 guest.check_in_date = date.fromisoformat(kw['check_in_date'])
             if kw.get('check_out_date'):
@@ -130,14 +193,15 @@ class GuestsController(BaseController):
                 guest.status = kw['status']
                 if kw['status'] == 'checked_out':
                     room = guest.room
-                    room.status = 'vacant'
+                    if not Guest.select(AND(Guest.q.roomID == room.id, Guest.q.status == 'checked_in', Guest.q.id != int(id))).count():
+                        room.status = 'vacant'
                     if not guest.check_out_date:
                         guest.check_out_date = date.today()
             if 'notes' in kw:
                 guest.notes = kw.get('notes', '')
-            flash('住客信息更新成功', 'success')
+            self._flash('住客信息更新成功', 'success')
         except Exception as e:
-            flash(f'更新失败: {str(e)}', 'danger')
+            self._flash(f'更新失败: {str(e)}', 'danger')
         redirect(url('/guests'))
 
     @expose()
@@ -149,7 +213,7 @@ class GuestsController(BaseController):
             guest.destroySelf()
             if not Guest.selectBy(roomID=room.id, status='checked_in').count():
                 room.status = 'vacant'
-            flash('住客记录已删除', 'success')
+            self._flash('住客记录已删除', 'success')
         except Exception as e:
-            flash(f'删除失败: {str(e)}', 'danger')
+            self._flash(f'删除失败: {str(e)}', 'danger')
         redirect(url('/guests'))

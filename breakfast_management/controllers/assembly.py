@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-from tg import expose, request, redirect, url, flash
-from breakfast_management.controllers.base import BaseController, require_login
+from tg import expose, request, redirect, url
+from breakfast_management.controllers.base import BaseController, require_login, _flash
 from breakfast_management.model import BasketAssembly, Basket, PreparationSchedule, DeliveryRecord
 from sqlobject import AND
 from datetime import datetime, date
@@ -46,26 +46,26 @@ class AssemblyController(BaseController):
             schedule_id = kw.get('schedule_id')
 
             if not basket_id or not schedule_id:
-                flash('请选择餐篮和排期', 'danger')
+                self._flash('请选择餐篮和排期', 'danger')
                 redirect(url('/assembly'))
 
             basket = Basket.get(int(basket_id))
             schedule = PreparationSchedule.get(int(schedule_id))
 
             if basket.status == 'disabled':
-                flash('停用餐篮不能参与装配', 'danger')
+                self._flash('停用餐篮不能参与装配', 'danger')
                 redirect(url('/assembly'))
 
             if basket.status != 'available':
-                flash('该餐篮当前不可用', 'danger')
+                self._flash('该餐篮当前不可用', 'danger')
                 redirect(url('/assembly'))
 
             if basket.package_type and basket.package_type.id != schedule.package_type.id:
-                flash(f'餐篮套餐类型({basket.package_type.name})与排期套餐({schedule.package_type.name})不匹配', 'danger')
+                self._flash(f'餐篮套餐类型({basket.package_type.name})与排期套餐({schedule.package_type.name})不匹配', 'danger')
                 redirect(url('/assembly'))
 
             if schedule.status != 'completed':
-                flash('排期尚未备餐完成，不能装配', 'danger')
+                self._flash('排期尚未备餐完成，不能装配', 'danger')
                 redirect(url('/assembly'))
 
             user = self._get_current_user()
@@ -79,7 +79,7 @@ class AssemblyController(BaseController):
 
             basket.status = 'in_use'
 
-            flash(f'餐篮 {basket.basket_code} 装配成功', 'success')
+            self._flash(f'餐篮 {basket.basket_code} 装配成功', 'success')
         except Exception as e:
-            flash(f'装配失败: {str(e)}', 'danger')
+            self._flash(f'装配失败: {str(e)}', 'danger')
         redirect(url('/assembly'))
