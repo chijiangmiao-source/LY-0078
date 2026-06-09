@@ -25,19 +25,21 @@ def require_login(func):
     def wrapper(self, *args, **kwargs):
         user_id = session.get('user_id')
         if not user_id:
-            _flash('请先登录', 'warning')
-            redirect(url('/login'))
+            request.path_info = '/'
+            return self.login() if hasattr(self, 'login') else redirect(url('/'))
         try:
             user = User.get(user_id)
             if not user.is_active:
                 session.delete()
                 _flash('账号已被禁用', 'danger')
-                redirect(url('/login'))
+                request.path_info = '/'
+                return self.login() if hasattr(self, 'login') else redirect(url('/'))
             request.identity = user
         except Exception:
             session.delete()
             _flash('登录状态已过期', 'warning')
-            redirect(url('/login'))
+            request.path_info = '/'
+            return self.login() if hasattr(self, 'login') else redirect(url('/'))
         return func(self, *args, **kwargs)
     wrapper.__name__ = func.__name__
     return wrapper
@@ -46,6 +48,10 @@ def require_login(func):
 class BaseController(TGController):
     def __before__(self, *args, **kwargs):
         pass
+
+    def login(self, **kw):
+        from breakfast_management.controllers.root import RootController
+        return RootController().login(**kw)
 
     def _flash(self, message, category='info'):
         _flash(message, category)

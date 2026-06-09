@@ -58,9 +58,10 @@ class RootController(BaseController):
         session.save()
         redirect(url('/login'))
 
-    @expose('breakfast_management.templates.index')
-    @require_login
-    def index(self):
+    @expose('breakfast_management.templates.login')
+    def index(self, **kw):
+        if not session.get('user_id'):
+            return self.login(**kw)
         redirect(url('/dashboard'))
 
     @expose('breakfast_management.templates.dashboard')
@@ -144,10 +145,24 @@ class RootController(BaseController):
         except Exception:
             total_baskets = 0
 
+        total_slot_count = sum(slot_counts.values())
+        package_total = sum(package_stats.values())
+        slot_widths = {
+            'early': (slot_counts.get('early', 0) * 100.0 / total_slot_count) if total_slot_count else 0,
+            'morning': (slot_counts.get('morning', 0) * 100.0 / total_slot_count) if total_slot_count else 0,
+            'late': (slot_counts.get('late', 0) * 100.0 / total_slot_count) if total_slot_count else 0,
+        }
+        package_stats_list = []
+        for pkg_name, cnt in sorted(package_stats.items(), key=lambda x: -x[1]):
+            percent = round(cnt * 100.0 / package_total, 1) if package_total else 0
+            package_stats_list.append((pkg_name, cnt, percent))
+
         return self._get_context(
             page='dashboard',
             slot_counts=slot_counts,
+            slot_widths=slot_widths,
             package_stats=package_stats,
+            package_stats_list=package_stats_list,
             returned_count=returned_count,
             pending_count=pending_count,
             delivering_count=delivering_count,

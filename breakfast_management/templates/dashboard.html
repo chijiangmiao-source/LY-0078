@@ -67,7 +67,7 @@
                             <span class="badge bg-primary rounded-pill">${slot_counts.get('early', 0)} 单</span>
                         </div>
                         <div class="progress" style="height: 8px;">
-                            <div class="progress-bar bg-primary" style="width: ${(slot_counts.get('early', 0) * 100 / max(1, sum(slot_counts.values())))}%"></div>
+                            <div class="progress-bar bg-primary" style="width: ${slot_widths.get('early', 0)}%"></div>
                         </div>
                     </div>
                     <div>
@@ -76,7 +76,7 @@
                             <span class="badge bg-success rounded-pill">${slot_counts.get('morning', 0)} 单</span>
                         </div>
                         <div class="progress" style="height: 8px;">
-                            <div class="progress-bar bg-success" style="width: ${(slot_counts.get('morning', 0) * 100 / max(1, sum(slot_counts.values())))}%"></div>
+                            <div class="progress-bar bg-success" style="width: ${slot_widths.get('morning', 0)}%"></div>
                         </div>
                     </div>
                     <div>
@@ -85,7 +85,7 @@
                             <span class="badge bg-warning rounded-pill text-dark">${slot_counts.get('late', 0)} 单</span>
                         </div>
                         <div class="progress" style="height: 8px;">
-                            <div class="progress-bar bg-warning" style="width: ${(slot_counts.get('late', 0) * 100 / max(1, sum(slot_counts.values())))}%"></div>
+                            <div class="progress-bar bg-warning" style="width: ${slot_widths.get('late', 0)}%"></div>
                         </div>
                     </div>
                 </div>
@@ -97,14 +97,14 @@
                 <h5 class="fw-bold mb-3"><i class="bi bi-pie-chart me-2 text-primary"></i>套餐类型分布</h5>
                 <py:if test="package_stats">
                     <div class="d-flex flex-column gap-2">
-                        <div py:for="pkg_name, cnt in sorted(package_stats.items(), key=lambda x: -x[1])"
+                        <div py:for="pkg_name, cnt, percent in package_stats_list"
                              class="d-flex justify-content-between align-items-center p-2 rounded"
                              style="background: #f8f9fa;">
                             <span class="fw-medium">${pkg_name}</span>
                             <div class="d-flex align-items-center gap-2">
                                 <span class="badge bg-info rounded-pill">${cnt} 份</span>
                                 <small class="text-muted">
-                                    ${round(cnt * 100 / sum(package_stats.values()), 1)}%
+                                    ${percent}%
                                 </small>
                             </div>
                         </div>

@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 from breakfast_management.config.environment import load_environment
-from tg import AppConfig
+from breakfast_management.config.app_cfg import base_config
 
 application = None
 
 
 def make_app(global_conf, full_stack=True, **app_conf):
     global application
-    config = load_environment(global_conf, app_conf)
-    app = config.make_wsgi_app()
+    conf = load_environment(global_conf, app_conf)
+    app = base_config.make_wsgi_app(global_conf, app_conf)
     application = app
     return app
