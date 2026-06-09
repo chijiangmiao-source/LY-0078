@@ -58,13 +58,49 @@ class ApiController(BaseController):
             )).count(),
         }
 
+        try:
+            signed_count = DeliveryRecord.select(AND(
+                DeliveryRecord.q.delivery_date == d,
+                DeliveryRecord.q.sign_status == 'signed'
+            )).count()
+        except Exception:
+            signed_count = 0
+        try:
+            rejected_count = DeliveryRecord.select(AND(
+                DeliveryRecord.q.delivery_date == d,
+                DeliveryRecord.q.sign_status == 'rejected'
+            )).count()
+        except Exception:
+            rejected_count = 0
+        try:
+            unsigned_count = DeliveryRecord.select(AND(
+                DeliveryRecord.q.delivery_date == d,
+                DeliveryRecord.q.sign_status == 'unsigned',
+                DeliveryRecord.q.status != 'cancelled'
+            )).count()
+        except Exception:
+            unsigned_count = 0
+
+        total_for_sign_rate = signed_count + rejected_count + unsigned_count
+        sign_rate = round((signed_count * 100.0 / total_for_sign_rate), 1) if total_for_sign_rate else 0.0
+
+        sign_stats = {
+            'signed': signed_count,
+            'rejected': rejected_count,
+            'unsigned': unsigned_count,
+            'sign_rate': sign_rate
+        }
+
         return {
             'date': stat_date,
             'slot_counts': slot_counts,
             'package_stats': package_stats,
             'status_stats': status_stats,
+            'sign_stats': sign_stats,
             'total_deliveries': sum(slot_counts.values()),
-            'returned_count': status_stats['returned']
+            'returned_count': status_stats['returned'],
+            'signed_count': signed_count,
+            'sign_rate': sign_rate
         }
 
     @expose('json')

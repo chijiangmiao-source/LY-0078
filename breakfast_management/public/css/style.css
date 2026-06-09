@@ -1,1 +1,30 @@
 /* Custom CSS for Breakfast Management System */
+
+/* 未签收记录高亮样式 */
+.table-unsigned {
+    background-color: #fff3cd !important;
+    animation: pulse-warning 2s ease-in-out infinite;
+}
+
+.table-unsigned:hover {
+    background-color: #ffe69c !important;
+}
+
+@keyframes pulse-warning {
+    0%, 100% {
+        background-color: #fff3cd;
+    }
+    50% {
+        background-color: #ffeaa0;
+    }
+}
+
+/* 签收状态徽章图标微调 */
+.badge i {
+    vertical-align: -1px;
+}
+
+/* 签收统计卡片文字确保白色 */
+.stat-card .text-white {
+    color: #fff !important;
+}

@@ -120,6 +120,17 @@ class DeliveryRecord(SQLObject):
     )
     notes = StringCol(length=500, default='')
     created_at = DateTimeCol(default=datetime.now)
+    signatory = StringCol(length=50, default='')
+    signed_at = DateTimeCol(default=None)
+    sign_status = EnumCol(enumValues=['unsigned', 'signed', 'rejected'], default='unsigned')
+    sign_notes = StringCol(length=500, default='')
+
+
+def _ensure_column(conn, table_name, col_def):
+    try:
+        conn.execute(f"ALTER TABLE {table_name} ADD COLUMN {col_def}")
+    except Exception:
+        pass
 
 
 def init_model(sqlhub_ref):
@@ -132,6 +143,12 @@ def init_model(sqlhub_ref):
         PreparationSchedule.createTable(ifNotExists=True)
         BasketAssembly.createTable(ifNotExists=True)
         DeliveryRecord.createTable(ifNotExists=True)
+
+        conn = sqlhub_ref.getConnection()
+        _ensure_column(conn, 'delivery_records', "signatory VARCHAR(50) DEFAULT ''")
+        _ensure_column(conn, 'delivery_records', "signed_at TIMESTAMP")
+        _ensure_column(conn, 'delivery_records', "sign_status VARCHAR(20) DEFAULT 'unsigned'")
+        _ensure_column(conn, 'delivery_records', "sign_notes VARCHAR(500) DEFAULT ''")
 
         if not User.selectBy(username='admin').count():
             from breakfast_management.lib.security import hash_password

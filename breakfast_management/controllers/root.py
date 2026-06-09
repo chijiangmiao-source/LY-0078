@@ -129,6 +129,34 @@ class RootController(BaseController):
             delivered_count = 0
 
         try:
+            signed_count = DeliveryRecord.select(AND(
+                DeliveryRecord.q.delivery_date == today,
+                DeliveryRecord.q.sign_status == 'signed'
+            )).count()
+        except Exception:
+            signed_count = 0
+
+        try:
+            rejected_count = DeliveryRecord.select(AND(
+                DeliveryRecord.q.delivery_date == today,
+                DeliveryRecord.q.sign_status == 'rejected'
+            )).count()
+        except Exception:
+            rejected_count = 0
+
+        try:
+            unsigned_count = DeliveryRecord.select(AND(
+                DeliveryRecord.q.delivery_date == today,
+                DeliveryRecord.q.sign_status == 'unsigned',
+                DeliveryRecord.q.status != 'cancelled'
+            )).count()
+        except Exception:
+            unsigned_count = 0
+
+        total_for_sign_rate = signed_count + rejected_count + unsigned_count
+        sign_rate = round((signed_count * 100.0 / total_for_sign_rate), 1) if total_for_sign_rate else 0.0
+
+        try:
             total_rooms = Room.select().count()
         except Exception:
             total_rooms = 0
@@ -167,6 +195,10 @@ class RootController(BaseController):
             pending_count=pending_count,
             delivering_count=delivering_count,
             delivered_count=delivered_count,
+            signed_count=signed_count,
+            rejected_count=rejected_count,
+            unsigned_count=unsigned_count,
+            sign_rate=sign_rate,
             total_rooms=total_rooms,
             occupied_rooms=occupied_rooms,
             active_baskets=active_baskets,

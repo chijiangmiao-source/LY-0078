@@ -20,7 +20,8 @@ class DeliveriesController(BaseController):
             keyword = kw['keyword'].strip()
             query = DeliveryRecord.select(OR(
                 DeliveryRecord.q.delivery_no.contains(keyword),
-                DeliveryRecord.q.notes.contains(keyword)
+                DeliveryRecord.q.notes.contains(keyword),
+                DeliveryRecord.q.signatory.contains(keyword)
             ))
         if kw.get('delivery_date'):
             query = DeliveryRecord.select(AND(
@@ -36,6 +37,8 @@ class DeliveriesController(BaseController):
             query = DeliveryRecord.select(AND(query.expression, DeliveryRecord.q.time_slot == kw['time_slot']))
         if kw.get('status'):
             query = DeliveryRecord.select(AND(query.expression, DeliveryRecord.q.status == kw['status']))
+        if kw.get('sign_status'):
+            query = DeliveryRecord.select(AND(query.expression, DeliveryRecord.q.sign_status == kw['sign_status']))
         if kw.get('room_id'):
             query = DeliveryRecord.select(AND(query.expression, DeliveryRecord.q.roomID == int(kw['room_id'])))
 
@@ -130,7 +133,8 @@ class DeliveriesController(BaseController):
                 delivery_date=d_date,
                 delivery_personID=user.id if user else None,
                 status='pending',
-                notes=kw.get('notes', '')
+                notes=kw.get('notes', ''),
+                sign_status='unsigned'
             )
 
             self._flash(f'配送单 {delivery_no} 创建成功', 'success')
@@ -174,10 +178,65 @@ class DeliveriesController(BaseController):
             if not delivery.dispatched_at:
                 delivery.dispatched_at = now
 
-            self._flash('配送已标记为送达', 'success')
+            self._flash('配送已标记为送达，请及时登记签收信息', 'success')
+            redirect(url(f'/deliveries/{id}/sign'))
         except Exception as e:
             self._flash(f'操作失败: {str(e)}', 'danger')
         redirect(url('/deliveries'))
+
+    @expose('breakfast_management.templates.deliveries.sign_form')
+    @require_login
+    def sign(self, id, **kw):
+        try:
+            delivery = DeliveryRecord.get(int(id))
+        except:
+            self._flash('配送记录不存在', 'danger')
+            redirect(url('/deliveries'))
+
+        if request.method == 'POST':
+            try:
+                if delivery.status not in ['delivered', 'returned']:
+                    self._flash('只有已送达或已退回的配送可以登记签收', 'danger')
+                    redirect(url(f'/deliveries/{id}/sign'))
+
+                signatory = kw.get('signatory', '').strip()
+                sign_status = kw.get('sign_status', 'signed')
+                sign_notes = kw.get('sign_notes', '').strip()
+                signed_at_str = kw.get('signed_at')
+
+                if not signatory:
+                    self._flash('请填写签收人', 'danger')
+                    redirect(url(f'/deliveries/{id}/sign'))
+
+                if sign_status not in ['signed', 'rejected']:
+                    sign_status = 'signed'
+
+                if signed_at_str:
+                    signed_at = datetime.fromisoformat(signed_at_str)
+                else:
+                    signed_at = datetime.now()
+
+                if delivery.delivered_at and signed_at < delivery.delivered_at:
+                    self._flash('签收时间不能早于送达时间', 'danger')
+                    redirect(url(f'/deliveries/{id}/sign'))
+
+                delivery.signatory = signatory
+                delivery.sign_status = sign_status
+                delivery.signed_at = signed_at
+                delivery.sign_notes = sign_notes
+
+                status_text = '已签收' if sign_status == 'signed' else '已拒收'
+                self._flash(f'签收登记成功，状态：{status_text}', 'success')
+                redirect(url('/deliveries'))
+            except Exception as e:
+                self._flash(f'签收登记失败: {str(e)}', 'danger')
+                redirect(url(f'/deliveries/{id}/sign'))
+
+        return self._get_context(
+            page='deliveries',
+            delivery=delivery,
+            errors=None
+        )
 
     @expose('breakfast_management.templates.deliveries.return_form')
     @require_login
