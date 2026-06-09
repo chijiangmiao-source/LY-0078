@@ -148,7 +148,7 @@ class RootController(BaseController):
             unsigned_count = DeliveryRecord.select(AND(
                 DeliveryRecord.q.delivery_date == today,
                 DeliveryRecord.q.sign_status == 'unsigned',
-                DeliveryRecord.q.status != 'cancelled'
+                DeliveryRecord.q.status.in_(['delivered', 'returned'])
             )).count()
         except Exception:
             unsigned_count = 0

@@ -76,7 +76,7 @@ class ApiController(BaseController):
             unsigned_count = DeliveryRecord.select(AND(
                 DeliveryRecord.q.delivery_date == d,
                 DeliveryRecord.q.sign_status == 'unsigned',
-                DeliveryRecord.q.status != 'cancelled'
+                DeliveryRecord.q.status.in_(['delivered', 'returned'])
             )).count()
         except Exception:
             unsigned_count = 0
