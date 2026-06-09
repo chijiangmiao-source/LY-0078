@@ -193,10 +193,18 @@ class DeliveriesController(BaseController):
             self._flash('配送记录不存在', 'danger')
             redirect(url('/deliveries'))
 
+        user = self._get_current_user()
+        is_admin = user and user.role == 'admin'
+        is_first_sign = delivery.sign_status == 'unsigned'
+
         if request.method == 'POST':
             try:
-                if delivery.status not in ['delivered', 'returned']:
-                    self._flash('只有已送达或已退回的配送可以登记签收', 'danger')
+                if delivery.status != 'delivered':
+                    self._flash('只有已送达的配送可以登记签收，已退回的配送不能签收', 'danger')
+                    redirect(url(f'/deliveries/{id}/sign'))
+
+                if not is_first_sign and not is_admin:
+                    self._flash('签收信息已登记，如需修改请联系管理员', 'danger')
                     redirect(url(f'/deliveries/{id}/sign'))
 
                 signatory = kw.get('signatory', '').strip()
@@ -220,22 +228,56 @@ class DeliveriesController(BaseController):
                     self._flash('签收时间不能早于送达时间', 'danger')
                     redirect(url(f'/deliveries/{id}/sign'))
 
+                if not is_first_sign:
+                    old_signatory = delivery.signatory or ''
+                    old_status = delivery.sign_status or ''
+                    old_signed_at = delivery.signed_at.strftime('%Y-%m-%d %H:%M:%S') if delivery.signed_at else ''
+                    old_notes = delivery.sign_notes or ''
+
+                    new_status_text = '已签收' if sign_status == 'signed' else '已拒收'
+                    old_status_text = '已签收' if old_status == 'signed' else ('已拒收' if old_status == 'rejected' else '未签收')
+
+                    changes = []
+                    if old_signatory != signatory:
+                        changes.append(f'签收人: "{old_signatory}"→"{signatory}"')
+                    if old_status != sign_status:
+                        changes.append(f'状态: {old_status_text}→{new_status_text}')
+                    if old_signed_at != signed_at.strftime('%Y-%m-%d %H:%M:%S'):
+                        changes.append(f'签收时间: "{old_signed_at}"→"{signed_at.strftime("%Y-%m-%d %H:%M:%S")}"')
+                    if old_notes != sign_notes:
+                        changes.append(f'备注: "{old_notes}"→"{sign_notes}"')
+
+                    if changes:
+                        operator_name = user.real_name or user.username
+                        history_entry = f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 管理员 {operator_name} 修改: {'; '.join(changes)}"
+                        existing_history = delivery.sign_modify_history or ''
+                        delivery.sign_modify_history = (existing_history + '\n' + history_entry).strip()
+
+                    delivery.sign_modified_by = user.real_name or user.username
+                    delivery.sign_modified_at = datetime.now()
+
                 delivery.signatory = signatory
                 delivery.sign_status = sign_status
                 delivery.signed_at = signed_at
                 delivery.sign_notes = sign_notes
 
                 status_text = '已签收' if sign_status == 'signed' else '已拒收'
-                self._flash(f'签收登记成功，状态：{status_text}', 'success')
+                action_text = '登记' if is_first_sign else '修改'
+                self._flash(f'签收{action_text}成功，状态：{status_text}', 'success')
                 redirect(url('/deliveries'))
             except Exception as e:
-                self._flash(f'签收登记失败: {str(e)}', 'danger')
+                self._flash(f'签收操作失败: {str(e)}', 'danger')
                 redirect(url(f'/deliveries/{id}/sign'))
 
+        can_edit = is_first_sign or is_admin
         return self._get_context(
             page='deliveries',
             delivery=delivery,
-            errors=None
+            errors=None,
+            is_first_sign=is_first_sign,
+            is_admin=is_admin,
+            can_edit=can_edit,
+            current_user=user
         )
 
     @expose('breakfast_management.templates.deliveries.return_form')

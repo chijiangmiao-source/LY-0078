@@ -14,10 +14,24 @@
     <div class="row">
         <div class="col-md-6 mx-auto">
             <div class="card p-4">
-                <div class="alert alert-info mb-4">
-                    <i class="bi bi-info-circle me-2"></i>
-                    <strong>约束提示：</strong>签收时间不能早于送达时间。
-                </div>
+                <py:if test="not is_first_sign and not is_admin">
+                    <div class="alert alert-warning mb-4">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <strong>权限提示：</strong>该配送单已完成签收登记，如需修改请联系管理员操作。
+                    </div>
+                </py:if>
+                <py:if test="not is_first_sign and is_admin">
+                    <div class="alert alert-info mb-4">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>管理员模式：</strong>您正在修改已登记的签收信息，所有修改将被记录。
+                    </div>
+                </py:if>
+                <py:if test="delivery.status != 'delivered'">
+                    <div class="alert alert-danger mb-4">
+                        <i class="bi bi-x-circle me-2"></i>
+                        <strong>无法签收：</strong>只有已送达的配送单可以登记签收，当前状态不可操作。
+                    </div>
+                </py:if>
                 <div class="mb-3 p-3 bg-light rounded">
                     <div class="row g-2">
                         <div class="col-md-6">
@@ -53,7 +67,29 @@
                     </div>
                 </div>
 
-                <form method="POST">
+                <py:if test="delivery.sign_modified_by">
+                    <div class="mb-3 p-3 border border-info rounded bg-info bg-opacity-10">
+                        <h6 class="fw-bold text-info mb-2"><i class="bi bi-clock-history me-1"></i>修改记录</h6>
+                        <div class="small text-muted mb-1">
+                            最后修改人：<strong>${delivery.sign_modified_by}</strong>
+                            <span class="mx-2">|</span>
+                            修改时间：<strong>${delivery.sign_modified_at.strftime('%Y-%m-%d %H:%M:%S') if delivery.sign_modified_at else '-'}</strong>
+                        </div>
+                        <py:if test="delivery.sign_modify_history">
+                            <div class="mt-2">
+                                <py:for each="line in delivery.sign_modify_history.split('\n')">
+                                    <div class="small text-muted py:strip="True">${line}</div>
+                                </py:for>
+                            </div>
+                        </py:if>
+                    </div>
+                </py:if>
+
+                <form method="POST" py:if="delivery.status == 'delivered' and can_edit">
+                    <div class="alert alert-info mb-4">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>约束提示：</strong>签收时间不能早于送达时间。
+                    </div>
                     <div class="mb-3">
                         <label class="form-label">签收人 <span class="text-danger">*</span></label>
                         <input type="text" name="signatory" class="form-control" placeholder="请输入签收人姓名" value="${delivery.signatory or ''}" required>
@@ -77,11 +113,39 @@
                     </div>
                     <div class="mt-4">
                         <button type="submit" class="btn btn-success me-2">
-                            <i class="bi bi-check-lg me-1"></i>确认签收
+                            <i class="bi bi-check-lg me-1"></i>${'修改签收' if not is_first_sign else '确认签收'}
                         </button>
                         <a href="/deliveries" class="btn btn-outline-secondary">取消</a>
                     </div>
                 </form>
+
+                <py:if test="delivery.status != 'delivered' or not can_edit">
+                    <div class="mb-3">
+                        <label class="form-label">签收人</label>
+                        <div class="form-control-plaintext">${delivery.signatory or '-'}</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">签收时间</label>
+                        <div class="form-control-plaintext">${delivery.signed_at.strftime('%Y-%m-%d %H:%M:%S') if delivery.signed_at else '-'}</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">签收状态</label>
+                        <div class="form-control-plaintext">
+                            <py:choose>
+                                <py:when test="delivery.sign_status == 'signed'"><span class="badge bg-success">已签收</span></py:when>
+                                <py:when test="delivery.sign_status == 'rejected'"><span class="badge bg-danger">已拒收</span></py:when>
+                                <py:otherwise><span class="badge bg-secondary">未签收</span></py:otherwise>
+                            </py:choose>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">签收备注</label>
+                        <div class="form-control-plaintext">${delivery.sign_notes or '-'}</div>
+                    </div>
+                    <div class="mt-4">
+                        <a href="/deliveries" class="btn btn-outline-secondary">返回列表</a>
+                    </div>
+                </py:if>
             </div>
         </div>
     </div>

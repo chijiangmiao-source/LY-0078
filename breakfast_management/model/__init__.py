@@ -124,6 +124,9 @@ class DeliveryRecord(SQLObject):
     signed_at = DateTimeCol(default=None)
     sign_status = EnumCol(enumValues=['unsigned', 'signed', 'rejected'], default='unsigned')
     sign_notes = StringCol(length=500, default='')
+    sign_modified_by = StringCol(length=100, default='')
+    sign_modified_at = DateTimeCol(default=None)
+    sign_modify_history = StringCol(length=2000, default='')
 
 
 def _ensure_column(conn, table_name, col_def):
@@ -149,6 +152,9 @@ def init_model(sqlhub_ref):
         _ensure_column(conn, 'delivery_records', "signed_at TIMESTAMP")
         _ensure_column(conn, 'delivery_records', "sign_status VARCHAR(20) DEFAULT 'unsigned'")
         _ensure_column(conn, 'delivery_records', "sign_notes VARCHAR(500) DEFAULT ''")
+        _ensure_column(conn, 'delivery_records', "sign_modified_by VARCHAR(100) DEFAULT ''")
+        _ensure_column(conn, 'delivery_records', "sign_modified_at TIMESTAMP")
+        _ensure_column(conn, 'delivery_records', "sign_modify_history VARCHAR(2000) DEFAULT ''")
 
         if not User.selectBy(username='admin').count():
             from breakfast_management.lib.security import hash_password
