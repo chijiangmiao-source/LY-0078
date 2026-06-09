@@ -12,8 +12,10 @@ from breakfast_management.controllers.baskets import BasketsController
 from breakfast_management.controllers.schedules import SchedulesController
 from breakfast_management.controllers.assembly import AssemblyController
 from breakfast_management.controllers.deliveries import DeliveriesController
+from breakfast_management.controllers.materials import MaterialsController
 from breakfast_management.controllers.api import ApiController
 from breakfast_management.lib.security import verify_password
+from breakfast_management.model import PreparationMaterial
 from datetime import date, datetime
 from sqlobject import AND, OR
 
@@ -26,6 +28,7 @@ class RootController(BaseController):
     schedules = SchedulesController()
     assembly = AssemblyController()
     deliveries = DeliveriesController()
+    materials = MaterialsController()
     api = ApiController()
 
     @expose('breakfast_management.templates.login')
@@ -173,6 +176,37 @@ class RootController(BaseController):
         except Exception:
             total_baskets = 0
 
+        try:
+            pending_materials = PreparationMaterial.select(AND(
+                PreparationMaterial.q.prep_date == today,
+                PreparationMaterial.q.status == 'pending'
+            )).count()
+        except Exception:
+            pending_materials = 0
+
+        try:
+            preparing_materials = PreparationMaterial.select(AND(
+                PreparationMaterial.q.prep_date == today,
+                PreparationMaterial.q.status == 'preparing'
+            )).count()
+        except Exception:
+            preparing_materials = 0
+
+        try:
+            completed_materials = PreparationMaterial.select(AND(
+                PreparationMaterial.q.prep_date == today,
+                PreparationMaterial.q.status == 'completed'
+            )).count()
+        except Exception:
+            completed_materials = 0
+
+        try:
+            total_materials = PreparationMaterial.select(
+                PreparationMaterial.q.prep_date == today
+            ).count()
+        except Exception:
+            total_materials = 0
+
         total_slot_count = sum(slot_counts.values())
         package_total = sum(package_stats.values())
         slot_widths = {
@@ -203,5 +237,9 @@ class RootController(BaseController):
             occupied_rooms=occupied_rooms,
             active_baskets=active_baskets,
             total_baskets=total_baskets,
+            pending_materials=pending_materials,
+            preparing_materials=preparing_materials,
+            completed_materials=completed_materials,
+            total_materials=total_materials,
             today=today
         )

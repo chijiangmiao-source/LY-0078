@@ -58,6 +58,37 @@
 
     <div class="row mb-4">
         <div class="col-md-6 mb-3">
+            <div class="card p-3" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-1 text-white text-opacity-75">今日待备料数量</h6>
+                        <h2 class="fw-bold mb-0 text-white">${pending_materials + preparing_materials}</h2>
+                        <small class="text-white text-opacity-75">
+                            待备料 ${pending_materials} · 备料中 ${preparing_materials}
+                        </small>
+                    </div>
+                    <i class="bi bi-hourglass-split fs-1 text-white text-opacity-50"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-3">
+            <div class="card p-3" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-1 text-white text-opacity-75">已完成备料数量</h6>
+                        <h2 class="fw-bold mb-0 text-white">${completed_materials}</h2>
+                        <small class="text-white text-opacity-75">
+                            总计 ${total_materials} · 完成率 ${round((completed_materials * 100.0 / total_materials), 1) if total_materials else 0}%
+                        </small>
+                    </div>
+                    <i class="bi bi-check2-square fs-1 text-white text-opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-6 mb-3">
             <div class="card stat-card p-3" style="background: linear-gradient(135deg, #00b09b 0%, #96c93d 100%);">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>

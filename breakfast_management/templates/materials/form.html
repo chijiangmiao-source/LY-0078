@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html xmlns:py="http://genshi.edgewall.org/" py:extends="'master.html'">
+<py:block name="title">${'编辑' if material else '新增'}备料记录 - 民宿早餐备餐与配送管理系统</py:block>
+<py:block name="content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-0">
+                <i class="bi bi-box-seam me-2 text-primary"></i>
+                ${'编辑备料' if material else '新增备料'}
+            </h3>
+            <small class="text-muted"><a href="/materials" class="text-decoration-none">&larr; 返回列表</a></small>
+        </div>
+    </div>
+
+    <div class="card p-4">
+        <form method="POST" action="${f'/materials/{material.id}/update' if material else '/materials/create'}">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">备料日期 <span class="text-danger">*</span></label>
+                    <input type="date" name="prep_date" class="form-control" required
+                           value="${material.prep_date.isoformat() if material else ''}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">时段 <span class="text-danger">*</span></label>
+                    <select name="time_slot" class="form-select" required>
+                        <option value="">请选择时段</option>
+                        <option value="early" ${'selected' if material and material.time_slot == 'early' else ''}>早段 (6:00-7:00)</option>
+                        <option value="morning" ${'selected' if material and material.time_slot == 'morning' else ''}>中段 (7:00-8:00)</option>
+                        <option value="late" ${'selected' if material and material.time_slot == 'late' else ''}>晚段 (8:00-9:00)</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">套餐类型 <span class="text-danger">*</span></label>
+                    <select name="package_type_id" class="form-select" required>
+                        <option value="">请选择套餐</option>
+                        <option py:for="p in packages" value="${p.id}"
+                                ${'selected' if material and material.package_typeID == p.id else ''}>
+                            ${p.code} - ${p.name}
+                        </option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">原材料 <span class="text-danger">*</span></label>
+                    <select name="ingredient_id" class="form-select" required>
+                        <option value="">请选择原材料</option>
+                        <option py:for="ing in ingredients" value="${ing.id}"
+                                ${'selected' if material and material.ingredientID == ing.id else ''}>
+                            ${ing.name} ${f'({ing.unit})' if ing.unit else ''}
+                        </option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">关联备餐排期</label>
+                    <select name="schedule_id" class="form-select">
+                        <option value="">不关联</option>
+                        <option py:for="s in schedules" value="${s.id}"
+                                ${'selected' if material and material.scheduleID == s.id else ''}>
+                            #${s.id} - ${s.package_type.name if s.package_type else ''} - ${s.time_slot} - ${s.quantity}份
+                        </option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">计划用量</label>
+                    <input type="number" name="planned_qty" class="form-control" min="0"
+                           value="${material.planned_qty if material else 0}">
+                </div>
+                <py:if test="material">
+                    <div class="col-md-4">
+                        <label class="form-label">实际领用量</label>
+                        <input type="number" name="actual_qty" class="form-control" min="0"
+                               value="${material.actual_qty if material else 0}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">状态</label>
+                        <select name="status" class="form-select">
+                            <option value="pending" ${'selected' if material and material.status == 'pending' else ''}>待备料</option>
+                            <option value="preparing" ${'selected' if material and material.status == 'preparing' else ''}>备料中</option>
+                            <option value="completed" ${'selected' if material and material.status == 'completed' else ''}>已完成</option>
+                            <option value="cancelled" ${'selected' if material and material.status == 'cancelled' else ''}>已取消</option>
+                        </select>
+                    </div>
+                </py:if>
+                <div class="col-md-12">
+                    <label class="form-label">备注</label>
+                    <textarea name="notes" class="form-control" rows="2">${material.notes if material else ''}</textarea>
+                </div>
+            </div>
+            <div class="mt-4">
+                <button type="submit" class="btn btn-primary me-2">
+                    <i class="bi bi-check-lg me-1"></i>${'保存修改' if material else '创建备料'}
+                </button>
+                <a href="/materials" class="btn btn-outline-secondary">取消</a>
+            </div>
+        </form>
+    </div>
+</py:block>
+</html>

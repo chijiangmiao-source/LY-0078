@@ -129,6 +129,39 @@ class DeliveryRecord(SQLObject):
     sign_modify_history = StringCol(length=2000, default='')
 
 
+class Ingredient(SQLObject):
+    class sqlmeta:
+        table = 'ingredients'
+
+    name = StringCol(length=100, unique=True, notNone=True)
+    unit = StringCol(length=20, default='')
+    category = StringCol(length=50, default='')
+    is_active = BoolCol(default=True)
+    notes = StringCol(length=500, default='')
+    created_at = DateTimeCol(default=datetime.now)
+
+
+class PreparationMaterial(SQLObject):
+    class sqlmeta:
+        table = 'preparation_materials'
+
+    prep_date = DateCol(notNone=True, default=date.today)
+    time_slot = EnumCol(enumValues=['early', 'morning', 'late'], notNone=True)
+    package_type = ForeignKey('BreakfastPackage', notNone=True)
+    ingredient = ForeignKey('Ingredient', notNone=True)
+    schedule = ForeignKey('PreparationSchedule', default=None)
+    planned_qty = IntCol(notNone=True, default=0)
+    actual_qty = IntCol(default=0)
+    status = EnumCol(
+        enumValues=['pending', 'preparing', 'completed', 'cancelled'],
+        default='pending'
+    )
+    prepared_by = ForeignKey('User', default=None)
+    completed_at = DateTimeCol(default=None)
+    notes = StringCol(length=500, default='')
+    created_at = DateTimeCol(default=datetime.now)
+
+
 def _ensure_column(conn, table_name, col_def):
     try:
         conn.execute(f"ALTER TABLE {table_name} ADD COLUMN {col_def}")
@@ -146,6 +179,8 @@ def init_model(sqlhub_ref):
         PreparationSchedule.createTable(ifNotExists=True)
         BasketAssembly.createTable(ifNotExists=True)
         DeliveryRecord.createTable(ifNotExists=True)
+        Ingredient.createTable(ifNotExists=True)
+        PreparationMaterial.createTable(ifNotExists=True)
 
         conn = sqlhub_ref.getConnection()
         _ensure_column(conn, 'delivery_records', "signatory VARCHAR(50) DEFAULT ''")
