@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html xmlns:py="http://genshi.edgewall.org/" py:extends="'master.html'">
+<py:block name="title">
+    <py:if test="waste">编辑损耗记录</py:if>
+    <py:else>登记损耗</py:else>
+    - 民宿早餐备餐与配送管理系统
+</py:block>
+<py:block name="content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-0">
+                <i class="bi bi-x-circle-fill me-2 text-danger"></i>
+                <py:if test="waste">编辑损耗记录</py:if>
+                <py:else>登记损耗</py:else>
+            </h3>
+            <small class="text-muted"><a href="/wastes" class="text-decoration-none">&larr; 返回列表</a></small>
+        </div>
+    </div>
+
+    <div class="card p-4">
+        <form method="POST" action="${'/wastes/' + str(waste.id) + '/update' if waste else '/wastes/create'}">
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <label class="form-label">损耗日期 <span class="text-danger">*</span></label>
+                    <input type="date" name="waste_date" class="form-control" required
+                           value="${waste.waste_date.isoformat() if waste else today.isoformat()}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">损耗时段 <span class="text-danger">*</span></label>
+                    <select name="time_slot" class="form-select" required>
+                        <option value="">请选择时段</option>
+                        <option value="early" ${'selected' if waste and waste.time_slot == 'early' else ''}>早段 (6:00-7:00)</option>
+                        <option value="morning" ${'selected' if waste and waste.time_slot == 'morning' else ''}>中段 (7:00-8:00)</option>
+                        <option value="late" ${'selected' if waste and waste.time_slot == 'late' else ''}>晚段 (8:00-9:00)</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">关联套餐 <span class="text-danger">*</span></label>
+                    <select name="package_type_id" class="form-select" required>
+                        <option value="">请选择套餐</option>
+                        <option py:for="p in packages" value="${p.id}"
+                                ${'selected' if waste and waste.package_typeID == p.id else ''}>
+                            ${p.name}
+                        </option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-md-3">
+                    <label class="form-label">损耗环节 <span class="text-danger">*</span></label>
+                    <select name="stage" class="form-select" required>
+                        <option value="">请选择环节</option>
+                        <option py:for="val, label in stage_options" value="${val}"
+                                ${'selected' if waste and waste.stage == val else ''}>
+                            ${label}
+                        </option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">损耗数量 <span class="text-danger">*</span></label>
+                    <input type="number" name="quantity" class="form-control" min="1" required
+                           value="${waste.quantity if waste else 1}">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">损耗原因 <span class="text-danger">*</span></label>
+                    <input type="text" name="reason" class="form-control" list="reason_options"
+                           placeholder="请输入或选择损耗原因" required
+                           value="${waste.reason if waste else ''}">
+                    <datalist id="reason_options">
+                        <option py:for="r in reason_options" value="${r}"></option>
+                    </datalist>
+                    <small class="text-muted">可从下拉选择常用原因或手动输入</small>
+                </div>
+            </div>
+
+            <h6 class="fw-bold mb-3 text-muted"><i class="bi bi-link-45deg me-1"></i>关联记录（可选）</h6>
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <label class="form-label">关联备餐排期</label>
+                    <select name="schedule_id" class="form-select">
+                        <option value="">不关联</option>
+                        <option py:for="s in schedules" value="${s.id}"
+                                ${'selected' if waste and waste.scheduleID == s.id else ''}>
+                            #${s.id} - ${s.package_type.name if s.package_type else ''} (${s.quantity}份)
+                        </option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">关联备料记录</label>
+                    <select name="material_id" class="form-select">
+                        <option value="">不关联</option>
+                        <option py:for="m in materials" value="${m.id}"
+                                ${'selected' if waste and waste.materialID == m.id else ''}>
+                            #${m.id} - ${m.ingredient.name if m.ingredient else ''}
+                            (${m.package_type.name if m.package_type else ''})
+                        </option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">关联配送记录</label>
+                    <select name="delivery_id" class="form-select">
+                        <option value="">不关联</option>
+                        <option py:for="d in deliveries" value="${d.id}"
+                                ${'selected' if waste and waste.deliveryID == d.id else ''}>
+                            ${d.delivery_no} - ${d.room.room_number if d.room else ''}
+                        </option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-md-12">
+                    <label class="form-label">备注</label>
+                    <textarea name="notes" class="form-control" rows="3"
+                              placeholder="其他补充说明...">${waste.notes if waste else ''}</textarea>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary me-2">
+                    <i class="bi bi-check-lg me-1"></i>
+                    <py:if test="waste">保存修改</py:if>
+                    <py:else>提交登记</py:else>
+                </button>
+                <a href="/wastes" class="btn btn-outline-secondary">取消</a>
+            </div>
+        </form>
+    </div>
+</py:block>
+</html>

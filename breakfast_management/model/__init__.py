@@ -162,6 +162,28 @@ class PreparationMaterial(SQLObject):
     created_at = DateTimeCol(default=datetime.now)
 
 
+class WasteRecord(SQLObject):
+    class sqlmeta:
+        table = 'waste_records'
+
+    waste_date = DateCol(notNone=True, default=date.today)
+    time_slot = EnumCol(enumValues=['early', 'morning', 'late'], notNone=True)
+    package_type = ForeignKey('BreakfastPackage', notNone=True)
+    stage = EnumCol(
+        enumValues=['preparation', 'assembly', 'delivery', 'return'],
+        notNone=True,
+        default='preparation'
+    )
+    quantity = IntCol(notNone=True, default=0)
+    reason = StringCol(length=200, default='')
+    registered_by = ForeignKey('User', default=None)
+    schedule = ForeignKey('PreparationSchedule', default=None)
+    material = ForeignKey('PreparationMaterial', default=None)
+    delivery = ForeignKey('DeliveryRecord', default=None)
+    notes = StringCol(length=500, default='')
+    created_at = DateTimeCol(default=datetime.now)
+
+
 def _ensure_column(conn, table_name, col_def):
     try:
         conn.execute(f"ALTER TABLE {table_name} ADD COLUMN {col_def}")
@@ -181,6 +203,7 @@ def init_model(sqlhub_ref):
         DeliveryRecord.createTable(ifNotExists=True)
         Ingredient.createTable(ifNotExists=True)
         PreparationMaterial.createTable(ifNotExists=True)
+        WasteRecord.createTable(ifNotExists=True)
 
         conn = sqlhub_ref.getConnection()
         _ensure_column(conn, 'delivery_records', "signatory VARCHAR(50) DEFAULT ''")

@@ -4,7 +4,7 @@ from tg.decorators import with_trailing_slash
 from breakfast_management.controllers.base import BaseController, require_login, _flash
 from breakfast_management.model import (
     DeliveryRecord, Room, Guest, Basket, BreakfastPackage,
-    PreparationSchedule
+    PreparationSchedule, WasteRecord
 )
 from sqlobject import AND, OR
 from datetime import date, datetime
@@ -91,16 +91,43 @@ class ApiController(BaseController):
             'sign_rate': sign_rate
         }
 
+        try:
+            wastes_today = list(WasteRecord.select(
+                WasteRecord.q.waste_date == d
+            ))
+            waste_quantity = sum(w.quantity for w in wastes_today)
+        except Exception:
+            wastes_today = []
+            waste_quantity = 0
+
+        waste_package_stats = {}
+        try:
+            for w in wastes_today:
+                try:
+                    name = w.package_type.name if w.package_type else '未指定'
+                except Exception:
+                    name = '未指定'
+                waste_package_stats[name] = waste_package_stats.get(name, 0) + w.quantity
+        except Exception:
+            pass
+
+        waste_stats = {
+            'total_quantity': waste_quantity,
+            'package_stats': waste_package_stats
+        }
+
         return {
             'date': stat_date,
             'slot_counts': slot_counts,
             'package_stats': package_stats,
             'status_stats': status_stats,
             'sign_stats': sign_stats,
+            'waste_stats': waste_stats,
             'total_deliveries': sum(slot_counts.values()),
             'returned_count': status_stats['returned'],
             'signed_count': signed_count,
-            'sign_rate': sign_rate
+            'sign_rate': sign_rate,
+            'waste_quantity': waste_quantity
         }
 
     @expose('json')

@@ -54,6 +54,20 @@
                 </div>
             </div>
         </div>
+        <div class="col-md-3 mb-3">
+            <div class="card p-3" style="background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-1 text-white text-opacity-75">今日损耗数量</h6>
+                        <h2 class="fw-bold mb-0 text-white">${today_waste_quantity}</h2>
+                        <small class="text-white text-opacity-75">
+                            份
+                        </small>
+                    </div>
+                    <i class="bi bi-x-circle-fill fs-1 text-white text-opacity-50"></i>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="row mb-4">
@@ -176,6 +190,33 @@
                     <div class="text-center text-muted py-4">
                         <i class="bi bi-inbox fs-1 d-block mb-2"></i>
                         <small>暂无配送数据</small>
+                    </div>
+                </py:if>
+            </div>
+        </div>
+
+        <div class="col-md-6 mb-4">
+            <div class="card p-4">
+                <h5 class="fw-bold mb-3"><i class="bi bi-x-circle-fill me-2 text-danger"></i>损耗套餐分布</h5>
+                <py:if test="waste_package_stats">
+                    <div class="d-flex flex-column gap-2">
+                        <div py:for="pkg_name, cnt, percent in waste_package_stats_list"
+                             class="d-flex justify-content-between align-items-center p-2 rounded"
+                             style="background: #fff5f5;">
+                            <span class="fw-medium">${pkg_name}</span>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-danger rounded-pill">${cnt} 份</span>
+                                <small class="text-muted">
+                                    ${percent}%
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </py:if>
+                <py:if test="not waste_package_stats">
+                    <div class="text-center text-muted py-4">
+                        <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                        <small>今日暂无损耗记录</small>
                     </div>
                 </py:if>
             </div>

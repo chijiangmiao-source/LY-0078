@@ -3,7 +3,7 @@ from tg import expose, request, session, redirect, url
 from breakfast_management.controllers.base import BaseController, require_login, _flash, _get_flash
 from breakfast_management.model import (
     User, Room, Guest, BreakfastPackage, Basket,
-    PreparationSchedule, BasketAssembly, DeliveryRecord
+    PreparationSchedule, BasketAssembly, DeliveryRecord, WasteRecord
 )
 from breakfast_management.controllers.rooms import RoomsController
 from breakfast_management.controllers.guests import GuestsController
@@ -13,6 +13,7 @@ from breakfast_management.controllers.schedules import SchedulesController
 from breakfast_management.controllers.assembly import AssemblyController
 from breakfast_management.controllers.deliveries import DeliveriesController
 from breakfast_management.controllers.materials import MaterialsController
+from breakfast_management.controllers.wastes import WastesController
 from breakfast_management.controllers.api import ApiController
 from breakfast_management.lib.security import verify_password
 from breakfast_management.model import PreparationMaterial
@@ -29,6 +30,7 @@ class RootController(BaseController):
     assembly = AssemblyController()
     deliveries = DeliveriesController()
     materials = MaterialsController()
+    wastes = WastesController()
     api = ApiController()
 
     @expose('breakfast_management.templates.login')
@@ -219,6 +221,32 @@ class RootController(BaseController):
             percent = round(cnt * 100.0 / package_total, 1) if package_total else 0
             package_stats_list.append((pkg_name, cnt, percent))
 
+        try:
+            today_wastes = list(WasteRecord.select(
+                WasteRecord.q.waste_date == today
+            ))
+            today_waste_quantity = sum(w.quantity for w in today_wastes)
+        except Exception:
+            today_wastes = []
+            today_waste_quantity = 0
+
+        waste_package_stats = {}
+        try:
+            for w in today_wastes:
+                try:
+                    pkg_name = w.package_type.name if w.package_type else '未指定'
+                except Exception:
+                    pkg_name = '未指定'
+                waste_package_stats[pkg_name] = waste_package_stats.get(pkg_name, 0) + w.quantity
+        except Exception:
+            pass
+
+        waste_package_total = sum(waste_package_stats.values())
+        waste_package_stats_list = []
+        for pkg_name, cnt in sorted(waste_package_stats.items(), key=lambda x: -x[1]):
+            percent = round(cnt * 100.0 / waste_package_total, 1) if waste_package_total else 0
+            waste_package_stats_list.append((pkg_name, cnt, percent))
+
         return self._get_context(
             page='dashboard',
             slot_counts=slot_counts,
@@ -241,5 +269,8 @@ class RootController(BaseController):
             preparing_materials=preparing_materials,
             completed_materials=completed_materials,
             total_materials=total_materials,
+            today_waste_quantity=today_waste_quantity,
+            waste_package_stats=waste_package_stats,
+            waste_package_stats_list=waste_package_stats_list,
             today=today
         )

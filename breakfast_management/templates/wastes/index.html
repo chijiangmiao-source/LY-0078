@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html xmlns:py="http://genshi.edgewall.org/" py:extends="'master.html'">
+<py:block name="title">早餐损耗登记 - 民宿早餐备餐与配送管理系统</py:block>
+<py:block name="content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-0"><i class="bi bi-x-circle-fill me-2 text-danger"></i>早餐损耗登记</h3>
+            <small class="text-muted">登记备餐、装配、配送、退回各环节餐品损耗情况</small>
+        </div>
+        <div class="d-flex gap-2">
+            <div class="card px-3 py-2 bg-danger text-white bg-opacity-10">
+                <small>筛选结果损耗合计</small>
+                <h5 class="fw-bold mb-0 text-danger">${total_quantity} 份</h5>
+            </div>
+            <a href="/wastes/new" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-1"></i>登记损耗
+            </a>
+        </div>
+    </div>
+
+    <div class="card p-3 mb-4">
+        <form method="GET" action="/wastes" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label small text-muted">损耗日期</label>
+                <input type="date" name="waste_date" class="form-control" value="${filters.get('waste_date', today.isoformat())}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted">时段</label>
+                <select name="time_slot" class="form-select">
+                    <option value="">全部</option>
+                    <option value="early" ${'selected' if filters.get('time_slot') == 'early' else ''}>早段</option>
+                    <option value="morning" ${'selected' if filters.get('time_slot') == 'morning' else ''}>中段</option>
+                    <option value="late" ${'selected' if filters.get('time_slot') == 'late' else ''}>晚段</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted">套餐类型</label>
+                <select name="package_type_id" class="form-select">
+                    <option value="">全部</option>
+                    <option py:for="p in packages" value="${p.id}" ${'selected' if filters.get('package_type_id') == str(p.id) else ''}>${p.name}</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted">损耗环节</label>
+                <select name="stage" class="form-select">
+                    <option value="">全部</option>
+                    <option py:for="val, label in stage_options" value="${val}" ${'selected' if filters.get('stage') == val else ''}>${label}</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted">损耗原因</label>
+                <input type="text" name="reason" class="form-control" placeholder="搜索原因..." value="${filters.get('reason', '')}">
+            </div>
+            <div class="col-md-1">
+                <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search"></i></button>
+            </div>
+            <div class="col-md-1">
+                <a href="/wastes" class="btn btn-outline-secondary w-100">重置</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="card">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>日期</th>
+                    <th>时段</th>
+                    <th>套餐</th>
+                    <th>损耗环节</th>
+                    <th>数量</th>
+                    <th>损耗原因</th>
+                    <th>关联记录</th>
+                    <th>登记人</th>
+                    <th>登记时间</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr py:if="not wastes">
+                    <td colspan="10" class="text-center text-muted py-4">
+                        <i class="bi bi-inbox fs-1 d-block mb-2"></i>暂无损耗记录
+                    </td>
+                </tr>
+                <tr py:for="w in wastes">
+                    <td>${w.waste_date.strftime('%Y-%m-%d')}</td>
+                    <td>
+                        <py:choose>
+                            <py:when test="w.time_slot == 'early'"><span class="badge bg-primary">早段</span></py:when>
+                            <py:when test="w.time_slot == 'morning'"><span class="badge bg-success">中段</span></py:when>
+                            <py:when test="w.time_slot == 'late'"><span class="badge bg-warning text-dark">晚段</span></py:when>
+                        </py:choose>
+                    </td>
+                    <td class="fw-medium">${w.package_type.name if w.package_type else '-'}</td>
+                    <td>
+                        <py:choose>
+                            <py:when test="w.stage == 'preparation'"><span class="badge bg-secondary">备餐</span></py:when>
+                            <py:when test="w.stage == 'assembly'"><span class="badge bg-info text-dark">装配</span></py:when>
+                            <py:when test="w.stage == 'delivery'"><span class="badge bg-primary">配送</span></py:when>
+                            <py:when test="w.stage == 'return'"><span class="badge bg-warning text-dark">退回</span></py:when>
+                        </py:choose>
+                    </td>
+                    <td><span class="badge bg-danger rounded-pill">${w.quantity} 份</span></td>
+                    <td>
+                        <div class="fw-medium">${w.reason or '-'}</div>
+                        <py:if test="w.notes">
+                            <small class="text-muted">${w.notes}</small>
+                        </py:if>
+                    </td>
+                    <td>
+                        <div class="d-flex flex-column gap-1">
+                            <py:if test="w.schedule">
+                                <span class="badge bg-light text-dark"><i class="bi bi-calendar-check"></i> 排期 #${w.schedule.id}</span>
+                            </py:if>
+                            <py:if test="w.material">
+                                <span class="badge bg-light text-dark"><i class="bi bi-box-seam"></i> 备料 #${w.material.id}</span>
+                            </py:if>
+                            <py:if test="w.delivery">
+                                <span class="badge bg-light text-dark"><i class="bi bi-truck"></i> ${w.delivery.delivery_no}</span>
+                            </py:if>
+                            <py:if test="not (w.schedule or w.material or w.delivery)">
+                                <span class="text-muted small">-</span>
+                            </py:if>
+                        </div>
+                    </td>
+                    <td>${w.registered_by.real_name if w.registered_by else '-'}</td>
+                    <td class="text-muted small">${w.created_at.strftime('%m-%d %H:%M')}</td>
+                    <td>
+                        <a href="/wastes/${w.id}/edit" class="btn btn-sm btn-outline-primary me-1">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <a href="/wastes/${w.id}/delete" class="btn btn-sm btn-outline-danger"
+                           onclick="return confirm('确定删除该损耗记录吗？删除后无法恢复。')">
+                            <i class="bi bi-trash"></i>
+                        </a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</py:block>
+</html>
