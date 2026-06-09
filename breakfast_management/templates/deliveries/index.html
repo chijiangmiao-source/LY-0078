@@ -90,7 +90,7 @@
                         <i class="bi bi-inbox fs-1 d-block mb-2"></i>暂无配送记录
                     </td>
                 </tr>
-                <tr py:for="d in deliveries" class="${'table-warning table-unsigned' if (d.sign_status == 'unsigned' and d.status == 'delivered') else ''}">
+                <tr py:for="d in deliveries" class="${'table-warning table-unsigned' if (d.sign_status == 'unsigned' and d.status in ('delivered', 'returned')) else ''}">
                     <td class="fw-bold text-primary">${d.delivery_no}</td>
                     <td><span class="badge bg-info text-dark">${d.room.room_number}</span></td>
                     <td>${d.basket.basket_code if d.basket else '-'}</td>
@@ -110,12 +110,9 @@
                             <py:when test="d.sign_status == 'signed'"><span class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i>已签收</span></py:when>
                             <py:when test="d.sign_status == 'rejected'"><span class="badge bg-danger"><i class="bi bi-x-circle-fill me-1"></i>已拒收</span></py:when>
                             <py:otherwise>
-                                <py:if test="d.status == 'delivered'">
+                                <py:if test="d.status in ('delivered', 'returned')">
                                     <span class="badge bg-warning text-dark"><i class="bi bi-exclamation-triangle-fill me-1"></i>未签收</span>
                                 </py:if>
-                                <py:elif test="d.status == 'returned'">
-                                    <span class="badge bg-secondary"><i class="bi bi-dash-circle me-1"></i>无需签收</span>
-                                </py:elif>
                                 <py:otherwise>
                                     <span class="badge bg-secondary"><i class="bi bi-clock me-1"></i>待处理</span>
                                 </py:otherwise>
@@ -137,7 +134,7 @@
                                 <i class="bi bi-check2-circle"></i> 送达
                             </a>
                         </py:if>
-                        <py:if test="d.status == 'delivered'">
+                        <py:if test="d.status in ('delivered', 'returned')">
                             <a href="/deliveries/${d.id}/sign" class="btn btn-sm btn-warning text-dark me-1" title="登记签收">
                                 <i class="bi bi-pencil-square"></i> 签收
                             </a>

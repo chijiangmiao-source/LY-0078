@@ -193,17 +193,10 @@ class DeliveriesController(BaseController):
             self._flash('配送记录不存在', 'danger')
             redirect(url('/deliveries'))
 
-        current_user = self._get_current_user()
-        is_edit = delivery.sign_status != 'unsigned'
-
-        if is_edit and (not current_user or current_user.role != 'admin'):
-            self._flash('只有管理员可以修改已登记的签收信息', 'danger')
-            redirect(url('/deliveries'))
-
         if request.method == 'POST':
             try:
-                if delivery.status != 'delivered':
-                    self._flash('只有已送达的配送可以登记签收，已退回的单子不能签收', 'danger')
+                if delivery.status not in ['delivered', 'returned']:
+                    self._flash('只有已送达或已退回的配送可以登记签收', 'danger')
                     redirect(url(f'/deliveries/{id}/sign'))
 
                 signatory = kw.get('signatory', '').strip()
@@ -227,32 +220,13 @@ class DeliveriesController(BaseController):
                     self._flash('签收时间不能早于送达时间', 'danger')
                     redirect(url(f'/deliveries/{id}/sign'))
 
-                if is_edit:
-                    old_signatory = delivery.signatory or '空'
-                    old_sign_status = delivery.sign_status
-                    old_signed_at = delivery.signed_at.strftime('%Y-%m-%d %H:%M:%S') if delivery.signed_at else '空'
-                    old_sign_status_text = '已签收' if old_sign_status == 'signed' else ('已拒收' if old_sign_status == 'rejected' else '未签收')
-                    new_sign_status_text = '已签收' if sign_status == 'signed' else '已拒收'
-                    new_signed_at_text = signed_at.strftime('%Y-%m-%d %H:%M:%S')
-
-                    modify_log = (
-                        f"\n[修改痕迹 {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] "
-                        f"修改人: {current_user.real_name or current_user.username}({current_user.role}) | "
-                        f"签收人: {old_signatory} → {signatory} | "
-                        f"状态: {old_sign_status_text} → {new_sign_status_text} | "
-                        f"签收时间: {old_signed_at} → {new_signed_at_text}"
-                    )
-                    delivery.sign_notes = (sign_notes + modify_log) if sign_notes else modify_log.lstrip('\n')
-                else:
-                    delivery.sign_notes = sign_notes
-
                 delivery.signatory = signatory
                 delivery.sign_status = sign_status
                 delivery.signed_at = signed_at
+                delivery.sign_notes = sign_notes
 
-                action_text = '修改' if is_edit else '登记'
                 status_text = '已签收' if sign_status == 'signed' else '已拒收'
-                self._flash(f'签收{action_text}成功，状态：{status_text}', 'success')
+                self._flash(f'签收登记成功，状态：{status_text}', 'success')
                 redirect(url('/deliveries'))
             except Exception as e:
                 self._flash(f'签收登记失败: {str(e)}', 'danger')
@@ -261,9 +235,7 @@ class DeliveriesController(BaseController):
         return self._get_context(
             page='deliveries',
             delivery=delivery,
-            errors=None,
-            is_edit=is_edit,
-            current_user=current_user
+            errors=None
         )
 
     @expose('breakfast_management.templates.deliveries.return_form')

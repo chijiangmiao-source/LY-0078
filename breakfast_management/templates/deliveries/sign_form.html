@@ -5,8 +5,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h3 class="fw-bold mb-0">
-                <i class="bi bi-pencil-square me-2 ${'text-warning' if is_edit else 'text-success'}"></i>
-                ${'修改签收信息' if is_edit else '早餐签收登记'}
+                <i class="bi bi-pencil-square me-2 text-success"></i>早餐签收登记
             </h3>
             <small class="text-muted"><a href="/deliveries" class="text-decoration-none">&larr; 返回配送列表</a></small>
         </div>
@@ -14,96 +13,76 @@
 
     <div class="row">
         <div class="col-md-6 mx-auto">
-            <py:if test="delivery.status == 'returned'">
-                <div class="card p-4">
-                    <div class="alert alert-danger mb-0">
-                        <i class="bi bi-exclamation-triangle me-2"></i>
-                        <strong>无法登记签收：</strong>该配送单已退回，不能进行签收操作。
-                    </div>
-                    <div class="mt-3">
-                        <a href="/deliveries" class="btn btn-outline-secondary">
-                            <i class="bi bi-arrow-left me-1"></i>返回配送列表
-                        </a>
-                    </div>
+            <div class="card p-4">
+                <div class="alert alert-info mb-4">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <strong>约束提示：</strong>签收时间不能早于送达时间。
                 </div>
-            </py:if>
-            <py:else>
-                <div class="card p-4">
-                    <div class="alert alert-info mb-4">
-                        <i class="bi bi-info-circle me-2"></i>
-                        <strong>约束提示：</strong>签收时间不能早于送达时间；已退回的单子不能进行签收。
-                        <py:if test="is_edit">
-                            <br>
-                            <i class="bi bi-shield-lock me-1"></i>
-                            <strong>管理员模式：</strong>当前为修改已登记的签收信息，系统将自动记录修改痕迹。
-                        </py:if>
-                    </div>
-                    <div class="mb-3 p-3 bg-light rounded">
-                        <div class="row g-2">
-                            <div class="col-md-6">
-                                <small class="text-muted">配送单号</small>
-                                <div class="fw-bold text-primary">${delivery.delivery_no}</div>
-                            </div>
-                            <div class="col-md-6">
-                                <small class="text-muted">房间</small>
-                                <div><span class="badge bg-info text-dark">${delivery.room.room_number}</span></div>
-                            </div>
-                            <div class="col-md-6">
-                                <small class="text-muted">餐篮</small>
-                                <div class="fw-medium">${delivery.basket.basket_code if delivery.basket else '-'}</div>
-                            </div>
-                            <div class="col-md-6">
-                                <small class="text-muted">送达时间</small>
-                                <div>${delivery.delivered_at.strftime('%Y-%m-%d %H:%M:%S') if delivery.delivered_at else '-'}</div>
-                            </div>
-                            <div class="col-md-6">
-                                <small class="text-muted">住客</small>
-                                <div class="fw-medium">${delivery.guest.name if delivery.guest else '-'}</div>
-                            </div>
-                            <div class="col-md-6">
-                                <small class="text-muted">当前签收状态</small>
-                                <div>
-                                    <py:choose>
-                                        <py:when test="delivery.sign_status == 'signed'"><span class="badge bg-success">已签收</span></py:when>
-                                        <py:when test="delivery.sign_status == 'rejected'"><span class="badge bg-danger">已拒收</span></py:when>
-                                        <py:otherwise><span class="badge bg-secondary">未签收</span></py:otherwise>
-                                    </py:choose>
-                                </div>
+                <div class="mb-3 p-3 bg-light rounded">
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <small class="text-muted">配送单号</small>
+                            <div class="fw-bold text-primary">${delivery.delivery_no}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted">房间</small>
+                            <div><span class="badge bg-info text-dark">${delivery.room.room_number}</span></div>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted">餐篮</small>
+                            <div class="fw-medium">${delivery.basket.basket_code if delivery.basket else '-'}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted">送达时间</small>
+                            <div>${delivery.delivered_at.strftime('%Y-%m-%d %H:%M:%S') if delivery.delivered_at else '-'}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted">住客</small>
+                            <div class="fw-medium">${delivery.guest.name if delivery.guest else '-'}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted">当前签收状态</small>
+                            <div>
+                                <py:choose>
+                                    <py:when test="delivery.sign_status == 'signed'"><span class="badge bg-success">已签收</span></py:when>
+                                    <py:when test="delivery.sign_status == 'rejected'"><span class="badge bg-danger">已拒收</span></py:when>
+                                    <py:otherwise><span class="badge bg-secondary">未签收</span></py:otherwise>
+                                </py:choose>
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <form method="POST">
-                        <div class="mb-3">
-                            <label class="form-label">签收人 <span class="text-danger">*</span></label>
-                            <input type="text" name="signatory" class="form-control" placeholder="请输入签收人姓名" value="${delivery.signatory or ''}" required>
-                            <small class="text-muted">请填写实际签收人员姓名</small>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">签收时间</label>
-                            <input type="datetime-local" name="signed_at" class="form-control" value="${delivery.signed_at.strftime('%Y-%m-%dT%H:%M') if delivery.signed_at else ''}">
-                            <small class="text-muted">留空则使用当前时间</small>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">签收状态</label>
-                            <select name="sign_status" class="form-select">
-                                <option value="signed" ${'selected' if delivery.sign_status == 'signed' else ''}>已签收（正常签收）</option>
-                                <option value="rejected" ${'selected' if delivery.sign_status == 'rejected' else ''}>已拒收（客人拒收）</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">签收备注</label>
-                            <textarea name="sign_notes" class="form-control" rows="3" placeholder="特殊情况说明、餐品状况等。修改模式下系统会自动追加修改痕迹。">${delivery.sign_notes or ''}</textarea>
-                        </div>
-                        <div class="mt-4">
-                            <button type="submit" class="btn ${'btn-warning' if is_edit else 'btn-success'} me-2">
-                                <i class="bi bi-check-lg me-1"></i>${'保存修改' if is_edit else '确认签收'}
-                            </button>
-                            <a href="/deliveries" class="btn btn-outline-secondary">取消</a>
-                        </div>
-                    </form>
-                </div>
-            </py:else>
+                <form method="POST">
+                    <div class="mb-3">
+                        <label class="form-label">签收人 <span class="text-danger">*</span></label>
+                        <input type="text" name="signatory" class="form-control" placeholder="请输入签收人姓名" value="${delivery.signatory or ''}" required>
+                        <small class="text-muted">请填写实际签收人员姓名</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">签收时间</label>
+                        <input type="datetime-local" name="signed_at" class="form-control" value="${delivery.signed_at.strftime('%Y-%m-%dT%H:%M') if delivery.signed_at else ''}">
+                        <small class="text-muted">留空则使用当前时间</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">签收状态</label>
+                        <select name="sign_status" class="form-select">
+                            <option value="signed" ${'selected' if delivery.sign_status == 'signed' else ''}>已签收（正常签收）</option>
+                            <option value="rejected" ${'selected' if delivery.sign_status == 'rejected' else ''}>已拒收（客人拒收）</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">签收备注</label>
+                        <textarea name="sign_notes" class="form-control" rows="3" placeholder="特殊情况说明、餐品状况等">${delivery.sign_notes or ''}</textarea>
+                    </div>
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-success me-2">
+                            <i class="bi bi-check-lg me-1"></i>确认签收
+                        </button>
+                        <a href="/deliveries" class="btn btn-outline-secondary">取消</a>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 </py:block>
