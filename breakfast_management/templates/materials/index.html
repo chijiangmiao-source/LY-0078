@@ -125,22 +125,29 @@
                         </py:choose>
                     </td>
                     <td>
-                        <py:if test="m.status != 'completed' and m.status != 'cancelled'">
-                            <a href="/materials/${m.id}/complete" class="btn btn-sm btn-success me-1"
-                               onclick="return confirm('确定完成该备料吗？实际领用量将按计划用量自动填入。')">
-                                <i class="bi bi-check-circle"></i> 完成
-                            </a>
-                            <a href="/materials/${m.id}/edit" class="btn btn-sm btn-outline-primary me-1">
-                                <i class="bi bi-pencil"></i>
-                            </a>
-                            <a href="/materials/${m.id}/delete" class="btn btn-sm btn-outline-danger"
-                               onclick="return confirm('确定删除该备料记录吗？')">
-                                <i class="bi bi-trash"></i>
-                            </a>
-                        </py:if>
-                        <py:else>
-                            <span class="text-muted">—</span>
-                        </py:else>
+                        <py:choose>
+                            <py:when test="m.status == 'completed'">
+                                <span class="text-muted">—</span>
+                            </py:when>
+                            <py:when test="m.status == 'cancelled'">
+                                <a href="/materials/${m.id}/delete" class="btn btn-sm btn-outline-danger"
+                                   onclick="return confirm('确定删除该已取消的备料记录吗？删除后无法恢复。')">
+                                    <i class="bi bi-trash"></i> 删除
+                                </a>
+                            </py:when>
+                            <py:otherwise>
+                                <a href="/materials/${m.id}/edit" class="btn btn-sm btn-success me-1" title="登记实际领用量并完成备料">
+                                    <i class="bi bi-check-circle"></i> 登记领用
+                                </a>
+                                <a href="/materials/${m.id}/edit" class="btn btn-sm btn-outline-primary me-1">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <a href="/materials/${m.id}/cancel" class="btn btn-sm btn-outline-warning"
+                                   onclick="return confirm('确定取消该备料吗？取消后可删除记录。')">
+                                    <i class="bi bi-x-circle"></i> 取消
+                                </a>
+                            </py:otherwise>
+                        </py:choose>
                     </td>
                 </tr>
             </tbody>

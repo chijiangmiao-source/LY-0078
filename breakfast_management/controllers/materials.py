@@ -61,6 +61,19 @@ class MaterialsController(BaseController):
             errors=None
         )
 
+    def _validate_schedule(self, schedule_id, prep_date, package_type_id):
+        if not schedule_id:
+            return None
+        try:
+            schedule = PreparationSchedule.get(int(schedule_id))
+            if schedule.schedule_date != date.fromisoformat(prep_date):
+                raise Exception('关联的排期日期与备料日期不一致')
+            if schedule.package_typeID != int(package_type_id):
+                raise Exception('关联的排期套餐与备料套餐不一致')
+            return schedule
+        except Exception as e:
+            raise
+
     @expose()
     @require_login
     def create(self, **kw):
@@ -75,6 +88,13 @@ class MaterialsController(BaseController):
             if not time_slot or not package_type_id or not ingredient_id:
                 self._flash('请填写时段、套餐和原材料', 'danger')
                 redirect(url('/materials/new'))
+
+            if schedule_id:
+                try:
+                    self._validate_schedule(schedule_id, prep_date, package_type_id)
+                except Exception as e:
+                    self._flash(f'排期关联校验失败: {str(e)}', 'danger')
+                    redirect(url('/materials/new'))
 
             existing = PreparationMaterial.select(AND(
                 PreparationMaterial.q.prep_date == date.fromisoformat(prep_date),
@@ -133,6 +153,29 @@ class MaterialsController(BaseController):
                 self._flash('已完成的备料不能修改', 'danger')
                 redirect(url('/materials'))
 
+            new_prep_date = kw.get('prep_date', material.prep_date.isoformat())
+            new_package_type_id = kw.get('package_type_id', str(material.package_typeID))
+            new_schedule_id = kw.get('schedule_id', str(material.scheduleID) if material.scheduleID else '')
+
+            if new_schedule_id:
+                try:
+                    self._validate_schedule(new_schedule_id, new_prep_date, new_package_type_id)
+                except Exception as e:
+                    self._flash(f'排期关联校验失败: {str(e)}', 'danger')
+                    redirect(url(f'/materials/{id}/edit'))
+
+            action = kw.get('action', '')
+            new_status = kw.get('status', material.status)
+            new_actual_qty = kw.get('actual_qty')
+
+            will_complete = (action == 'complete') or (new_status == 'completed' and material.status != 'completed')
+
+            if will_complete:
+                actual_qty_val = int(new_actual_qty) if new_actual_qty else material.actual_qty
+                if actual_qty_val <= 0:
+                    self._flash('完成备料前必须填写实际领用量', 'danger')
+                    redirect(url(f'/materials/{id}/edit'))
+
             if kw.get('prep_date'):
                 material.prep_date = date.fromisoformat(kw['prep_date'])
             if kw.get('time_slot'):
@@ -141,13 +184,18 @@ class MaterialsController(BaseController):
                 material.package_typeID = int(kw['package_type_id'])
             if kw.get('ingredient_id'):
                 material.ingredientID = int(kw['ingredient_id'])
-            if kw.get('schedule_id'):
+            if 'schedule_id' in kw:
                 material.scheduleID = int(kw['schedule_id']) if kw['schedule_id'] else None
             if kw.get('planned_qty') is not None:
                 material.planned_qty = int(kw.get('planned_qty', 0))
-            if kw.get('actual_qty') is not None:
-                material.actual_qty = int(kw.get('actual_qty', 0))
-            if kw.get('status'):
+            if new_actual_qty is not None:
+                material.actual_qty = int(new_actual_qty)
+            if will_complete:
+                user = self._get_current_user()
+                material.status = 'completed'
+                material.prepared_byID = user.id if user else None
+                material.completed_at = datetime.now()
+            elif kw.get('status'):
                 material.status = kw['status']
             if 'notes' in kw:
                 material.notes = kw.get('notes', '')
@@ -164,14 +212,18 @@ class MaterialsController(BaseController):
             if material.status == 'completed':
                 self._flash('备料已完成', 'warning')
             else:
+                actual_qty = kw.get('actual_qty')
+                if not actual_qty and material.actual_qty == 0:
+                    self._flash('请填写实际领用量后再完成备料', 'danger')
+                    redirect(url('/materials'))
+                    return
+
                 user = self._get_current_user()
                 material.status = 'completed'
                 material.prepared_byID = user.id if user else None
                 material.completed_at = datetime.now()
-                if kw.get('actual_qty'):
-                    material.actual_qty = int(kw['actual_qty'])
-                elif material.actual_qty == 0:
-                    material.actual_qty = material.planned_qty
+                if actual_qty:
+                    material.actual_qty = int(actual_qty)
                 self._flash('备料已完成', 'success')
         except Exception as e:
             self._flash(f'操作失败: {str(e)}', 'danger')
@@ -179,11 +231,27 @@ class MaterialsController(BaseController):
 
     @expose()
     @require_login
-    def delete(self, id, **kw):
+    def cancel(self, id, **kw):
         try:
             material = PreparationMaterial.get(int(id))
             if material.status == 'completed':
-                self._flash('已完成的备料不能删除', 'danger')
+                self._flash('已完成的备料不能取消', 'danger')
+            elif material.status == 'cancelled':
+                self._flash('备料已取消', 'warning')
+            else:
+                material.status = 'cancelled'
+                self._flash('备料已取消', 'success')
+        except Exception as e:
+            self._flash(f'取消失败: {str(e)}', 'danger')
+        redirect(url('/materials'))
+
+    @expose()
+    @require_login
+    def delete(self, id, **kw):
+        try:
+            material = PreparationMaterial.get(int(id))
+            if material.status != 'cancelled':
+                self._flash('只有已取消的备料记录才能删除，请先取消', 'danger')
             else:
                 material.destroySelf()
                 self._flash('备料记录已删除', 'success')

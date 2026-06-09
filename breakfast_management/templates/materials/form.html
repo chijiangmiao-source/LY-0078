@@ -58,18 +58,25 @@
                             #${s.id} - ${s.package_type.name if s.package_type else ''} - ${s.time_slot} - ${s.quantity}份
                         </option>
                     </select>
+                    <small class="text-muted">仅可选择与备料日期、套餐一致的排期</small>
                 </div>
                 <div class="col-md-4">
                     <label class="form-label">计划用量</label>
                     <input type="number" name="planned_qty" class="form-control" min="0"
                            value="${material.planned_qty if material else 0}">
                 </div>
+                <div class="col-md-4">
+                    <label class="form-label">
+                        实际领用量
+                        <py:if test="material and material.status != 'completed' and material.status != 'cancelled'">
+                            <span class="text-danger">*</span>
+                        </py:if>
+                    </label>
+                    <input type="number" name="actual_qty" class="form-control" min="0"
+                           value="${material.actual_qty if material else 0}"
+                           ${'required' if material and material.status != 'completed' and material.status != 'cancelled' else ''}>
+                </div>
                 <py:if test="material">
-                    <div class="col-md-4">
-                        <label class="form-label">实际领用量</label>
-                        <input type="number" name="actual_qty" class="form-control" min="0"
-                               value="${material.actual_qty if material else 0}">
-                    </div>
                     <div class="col-md-4">
                         <label class="form-label">状态</label>
                         <select name="status" class="form-select">
@@ -86,10 +93,16 @@
                 </div>
             </div>
             <div class="mt-4">
+                <py:if test="material and material.status != 'completed' and material.status != 'cancelled'">
+                    <button type="submit" name="action" value="complete" class="btn btn-success me-2"
+                            onclick="return confirm('确定完成备料吗？请确保已填写实际领用量。')">
+                        <i class="bi bi-check-circle me-1"></i>保存并完成备料
+                    </button>
+                </py:if>
                 <button type="submit" class="btn btn-primary me-2">
                     <i class="bi bi-check-lg me-1"></i>${'保存修改' if material else '创建备料'}
                 </button>
-                <a href="/materials" class="btn btn-outline-secondary">取消</a>
+                <a href="/materials" class="btn btn-outline-secondary">返回</a>
             </div>
         </form>
     </div>
